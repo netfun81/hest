@@ -130,7 +130,6 @@ setup(void) {
     root = RootWindow(dpy, screen);
 
     XSetErrorHandler(xerror);
-    XSynchronize(dpy, True);
     XGetWindowAttributes(dpy, root, &attributes);
     screen_width = attributes.width;
     screen_height = attributes.height;
