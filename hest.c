@@ -13,7 +13,6 @@ static int findvacancy(void);
 static void keypress(XEvent*);
 static void maprequest(XEvent*);
 static void run(void);
-static void scan(void);
 static void setup(void);
 static void showhide(void);
 static void swap(int, int);
@@ -24,7 +23,7 @@ static int xerror(Display*, XErrorEvent*);
 static Display* dpy;
 static Window root;
 static Window windows[40];
-static int current_window;
+static int current_window = 0;
 static void(*handler[LASTEvent])(XEvent*) = {
     [DestroyNotify] = destroynotify,
     [KeyPress] = keypress,
@@ -36,7 +35,7 @@ static int keys[40] = {
     XK_a, XK_s, XK_d, XK_f, XK_g, XK_h, XK_j, XK_k,     XK_l,      XK_semicolon,
     XK_z, XK_x, XK_c, XK_v, XK_b, XK_n, XK_m, XK_comma, XK_period, XK_slash
 };
-static int last_window;
+static int last_window = 0;
 static const char* menu_cmd[] = {"dmenu_run", NULL};
 static int screen;
 static int screen_height;
@@ -115,20 +114,6 @@ run(void) {
 }
 
 void
-scan(void) {
-    unsigned int i, num;
-    Window d1, d2;
-    Window* wins = NULL;
-
-    if(XQueryTree(dpy, root, &d1, &d2, &wins, &num))
-        for(i = 2; i < num; ++i)
-            if(wins[i] != root)
-                windows[findvacancy()] = wins[i];
-
-    showhide();
-}
-
-void
 setup(void) {
     int i;
     static const int modifiers[] = {Mod4Mask, Mod4Mask | ShiftMask};
@@ -194,9 +179,8 @@ spawn(const char* argv[]) {
 }
 
 void
-view(int w) {
-    current_window = w;
-    last_window = current_window;
+view(int window) {
+    current_window = last_window = window;
     showhide();
 }
 
@@ -209,8 +193,6 @@ xerror(Display* dpy, XErrorEvent* ee) {
 int
 main(void) {
     setup();
-    scan();
-    view(0);
     run();
 
     return EXIT_SUCCESS;
