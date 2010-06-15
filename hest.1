@@ -1,0 +1,41 @@
+.TH HEST 1 hest\-VERSION
+.SH NAME
+hest \- fullscreen window manager
+.SH SYNOPSIS
+.B hest
+.SH DESCRIPTION
+.B hest
+is a fullscreen window manager. All windows are resized to fill the whole
+screen. Thus, only one window may be used at a time. This makes it easy to
+focus on one task at a time, and minimizes distractions.
+.P
+.B hest
+manages up to 40 windows. Each window gets assigned a key for quick access. The
+keys are optimised for a US QWERTY keyboard layout, and are
+.BR [1234567890qwertyuiopasdfghjkl;zxcvbnm,./].
+.SH OPTIONS
+.B hest
+has no options.
+.SH USAGE
+.SS Window management
+.TP
+.B Mod4-shortcut
+View the window corresponding to the shortcut.
+.TP
+.B Mod4-Shift-shortcut
+Swap the current window and the one corresponding to the shortcut.
+.TP
+.B Mod4-Return
+Start
+.BR dmenu_run (1).
+.TP
+.B Mod4-Shift-Return
+Start
+.BR urxvt (1).
+.SH BUGS
+Probably lots.
+.SH AUTHOR
+Martin Stensgård <mastensg@ping.uio.no>
+.SH SEE ALSO
+.BR dmenu (1),
+.BR urxvt (1).
