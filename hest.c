@@ -147,7 +147,8 @@ showhide(void) {
         XMoveResizeWindow(dpy, windows[current_window], 0, 0, screen_width, screen_height);
         XRaiseWindow(dpy, windows[current_window]);
         XSetInputFocus(dpy, windows[current_window], RevertToPointerRoot, CurrentTime);
-    }
+    } else
+        XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
 
     for(i = 0; i < LENGTH(windows); ++i)
         if(windows[i] && i != current_window)
