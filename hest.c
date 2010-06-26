@@ -50,7 +50,8 @@ destroynotify(XEvent* ev) {
         if(windows[i] == dwe->window)
             memset(&windows[i], 0, sizeof(Window));
 
-    view(last_window);
+    if(!windows[current_window])
+        view(last_window);
 }
 
 int
