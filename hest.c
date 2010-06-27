@@ -98,9 +98,12 @@ maprequest(XEvent* ev) {
     XMapWindow(dpy, mrev->window);
     if(!windows[current_window])
         windows[current_window] = mrev->window;
-    else
-        if((current_window = findvacancy()) != -1)
-            windows[current_window] = mrev->window;
+    else {
+        last_window = current_window;
+        current_window = findvacancy();
+        windows[current_window] = mrev->window;
+    }
+
     showhide();
 }
 
