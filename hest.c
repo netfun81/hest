@@ -46,15 +46,11 @@ static int keys[40] = {
 };
 static const char* menu_cmd[]            = {"dmenu_run", NULL};
 static const char* term_cmd[]            = {"urxvt", NULL};
-static const char* current_bg_color      = "#001122";
 static const char* current_border_color  = "#bbccff";
-static const char* current_fg_color      = "#ffeedd";
+static const char* fg_color              = "#ffeedd";
+static const char* normal_border_color   = "#445566";
+static const char* occupied_bg_color     = "#223344";
 static const char* vacant_bg_color       = "#000000";
-static const char* vacant_border_color   = "#556699";
-static const char* vacant_fg_color       = "#ffeedd";
-static const char* occupied_bg_color     = "#001122";
-static const char* occupied_border_color = "#556699";
-static const char* occupied_fg_color     = "#ffeedd";
 
 void
 destroynotify(XEvent* ev) {
@@ -86,50 +82,24 @@ drawpager(void) {
 
         strcpy(key, XKeysymToString(keys[i]));
 
-        if(i == current_window) {
-            XAllocNamedColor(dpy, cmap, current_bg_color, &color, &color);
-            XSetForeground(dpy, gc, color.pixel);
-            XFillRectangle(dpy, pager, gc, x, y, w, h);
-
-            XAllocNamedColor(dpy, cmap, current_border_color, &color, &color);
-            XSetForeground(dpy, gc, color.pixel);
-            XDrawRectangle(dpy, pager, gc, x, y, w, h);
-
-            XAllocNamedColor(dpy, cmap, current_fg_color, &color, &color);
-            XSetForeground(dpy, gc, color.pixel);
-            XDrawString(dpy, pager, gc, x + 8, y + 16, key, strlen(key));
-        } else if(windows[i]) {
+        if(windows[i])
             XAllocNamedColor(dpy, cmap, occupied_bg_color, &color, &color);
-            XSetForeground(dpy, gc, color.pixel);
-            XFillRectangle(dpy, pager, gc, x, y, w, h);
-
-            XAllocNamedColor(dpy, cmap, occupied_border_color, &color, &color);
-            XSetForeground(dpy, gc, color.pixel);
-            XDrawRectangle(dpy, pager, gc, x, y, w, h);
-
-            XAllocNamedColor(dpy, cmap, occupied_fg_color, &color, &color);
-            XSetForeground(dpy, gc, color.pixel);
-            XDrawString(dpy, pager, gc, x + 8, y + 16, key, strlen(key));
-        } else {
+        else
             XAllocNamedColor(dpy, cmap, vacant_bg_color, &color, &color);
-            XSetForeground(dpy, gc, color.pixel);
-            XFillRectangle(dpy, pager, gc, x, y, w, h);
+        XSetForeground(dpy, gc, color.pixel);
+        XFillRectangle(dpy, pager, gc, x, y, w, h);
 
-            XAllocNamedColor(dpy, cmap, vacant_border_color, &color, &color);
-            XSetForeground(dpy, gc, color.pixel);
-            XDrawRectangle(dpy, pager, gc, x, y, w, h);
+        if(i == current_window)
+            XAllocNamedColor(dpy, cmap, current_border_color, &color, &color);
+        else
+            XAllocNamedColor(dpy, cmap, normal_border_color, &color, &color);
+        XSetForeground(dpy, gc, color.pixel);
+        XDrawRectangle(dpy, pager, gc, x, y, w, h);
 
-            XAllocNamedColor(dpy, cmap, vacant_fg_color, &color, &color);
-            XSetForeground(dpy, gc, color.pixel);
-            XDrawString(dpy, pager, gc, x + 8, y + 16, key, strlen(key));
-        }
+        XAllocNamedColor(dpy, cmap, fg_color, &color, &color);
+        XSetForeground(dpy, gc, color.pixel);
+        XDrawString(dpy, pager, gc, x + 8, y + 16, key, strlen(key));
     }
-
-#if 0
-    XDrawLine(dpy, pager, gc, 10, 60, 180, 20);
-    XFillRectangle(dpy, pager, gc, 20, 20, 10, 10);
-    XDrawString(dpy, pager, gc, 50, 80, "Yo ho!", 6);
-#endif
 }
 
 int
