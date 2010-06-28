@@ -129,7 +129,7 @@ keypress(XEvent* ev) {
 
     keysym = XKeycodeToKeysym(dpy, (KeyCode)kev->keycode, 0);
 
-    if((kev->state & ShiftMask || keysym == XK_Shift_L || keysym == XK_Shift_R) &&
+    if((kev->state & ControlMask || keysym == XK_Control_L || keysym == XK_Control_R) &&
        (kev->state & Mod4Mask  || keysym == XK_Super_L || keysym == XK_Super_R)) {
         XRaiseWindow(dpy, pager);
         drawpager();
@@ -160,7 +160,7 @@ keyrelease(XEvent* ev) {
 
     keysym = XKeycodeToKeysym(dpy, (KeyCode)kev->keycode, 0);
 
-    if(keysym == XK_Shift_L || keysym == XK_Shift_R || keysym == XK_Super_L || keysym == XK_Super_R)
+    if(keysym == XK_Control_L || keysym == XK_Control_R || keysym == XK_Super_L || keysym == XK_Super_R)
         XLowerWindow(dpy, pager);
 }
 
@@ -196,7 +196,16 @@ run(void) {
 void
 setup(void) {
     int i;
-    static const int modifiers[] = {Mod4Mask, Mod4Mask | ShiftMask};
+    static const int modifiers[] = {
+        Mod4Mask,
+        Mod4Mask | ShiftMask,
+        Mod4Mask | ShiftMask | ControlMask,
+        Mod4Mask |             ControlMask,
+        Mod4Mask                           | Mod5Mask,
+        Mod4Mask | ShiftMask               | Mod5Mask,
+        Mod4Mask | ShiftMask | ControlMask | Mod5Mask,
+        Mod4Mask |             ControlMask | Mod5Mask,
+    };
     XWindowAttributes attributes;
 
     memset(&windows, 0, sizeof(windows));
