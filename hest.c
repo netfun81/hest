@@ -11,6 +11,7 @@ static void destroynotify(XEvent*);
 static void drawpager(void);
 static int findvacancy(void);
 static void keypress(XEvent*);
+static void keyrelease(XEvent*);
 static void maprequest(XEvent*);
 static void run(void);
 static void setup(void);
@@ -26,6 +27,7 @@ static GC gc;
 static void(*handler[LASTEvent])(XEvent*) = {
     [DestroyNotify] = destroynotify,
     [KeyPress] = keypress,
+    [KeyRelease] = keyrelease,
     [MapRequest] = maprequest
 };
 static int last_window = 0;
@@ -145,6 +147,14 @@ keypress(XEvent* ev) {
     XKeyEvent* kev = &ev->xkey;
 
     keysym = XKeycodeToKeysym(dpy, (KeyCode)kev->keycode, 0);
+
+    if((kev->state & ShiftMask || keysym == XK_Shift_L || XK_Shift_R) &&
+       (kev->state & Mod4Mask  || keysym == XK_Super_L || XK_Super_R)) {
+        fprintf(stderr, "Up!\n");
+        XRaiseWindow(dpy, pager);
+        drawpager();
+    }
+
     if(kev->state & Mod4Mask) {
         if(keysym == XK_Return)
             if(kev->state & ShiftMask)
@@ -161,6 +171,17 @@ keypress(XEvent* ev) {
                     return;
                 }
     }
+}
+
+void
+keyrelease(XEvent* ev) {
+    KeySym keysym;
+    XKeyEvent* kev = &ev->xkey;
+
+    keysym = XKeycodeToKeysym(dpy, (KeyCode)kev->keycode, 0);
+
+    if(keysym == XK_Shift_L || keysym == XK_Shift_R || keysym == XK_Super_L || keysym == XK_Super_R)
+        XLowerWindow(dpy, pager);
 }
 
 void
@@ -224,6 +245,8 @@ setup(void) {
     XSelectInput(dpy, root, KeyPressMask | SubstructureNotifyMask
                  | SubstructureRedirectMask);
 
+    XGrabKey(dpy, XKeysymToKeycode(dpy, XK_Super_L), AnyModifier, root, False, GrabModeAsync, GrabModeAsync);
+    XGrabKey(dpy, XKeysymToKeycode(dpy, XK_Super_R), AnyModifier, root, False, GrabModeAsync, GrabModeAsync);
     for(i = 0; i < LENGTH(modifiers); ++i)
         XGrabKey(dpy, AnyKey, modifiers[i], root, True, GrabModeAsync, GrabModeAsync);
 
@@ -236,16 +259,17 @@ showhide(void) {
 
     if(windows[current_window]) {
         XMoveResizeWindow(dpy, windows[current_window], 0, 0, screen_width, screen_height);
-        XRaiseWindow(dpy, windows[current_window]);
         XSetInputFocus(dpy, windows[current_window], RevertToPointerRoot, CurrentTime);
-    } else
+        XRaiseWindow(dpy, windows[current_window]);
+    } else {
         XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
+        XRaiseWindow(dpy, pager);
+        drawpager();
+    }
 
     for(i = 0; i < LENGTH(windows); ++i)
         if(windows[i] && i != current_window)
             XMoveResizeWindow(dpy, windows[i], 0, screen_height, screen_width, screen_height);
-
-    drawpager();
 }
 
 void
