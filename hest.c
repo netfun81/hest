@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <X11/keysym.h>
 #include <X11/Xlib.h>
@@ -67,20 +68,25 @@ destroynotify(XEvent* ev) {
 
 void
 drawpager(void) {
+    char buffer[256];
     Colormap cmap = DefaultColormap(dpy, screen);
     XColor color;
     int i;
     int x, y, h, w;
-    char key[16];
+    time_t t;
+    struct tm* tmp;
 
     w = (screen_width/10 - 12);
     h = (screen_height/10 - 12);
+
+    XSetForeground(dpy, gc, XBlackPixel(dpy, screen));
+    XFillRectangle(dpy, pager, gc, 0, 0, screen_width/2.5, screen_height/2.5 + 16);
 
     for(i = 0; i < LENGTH(windows); ++i) {
         x = (i%10 + 1) * 10 + i%10 * w;
         y = (i/10 + 1) * 10 + i/10 * h;
 
-        strcpy(key, XKeysymToString(keys[i]));
+        strcpy(buffer, XKeysymToString(keys[i]));
 
         if(windows[i])
             XAllocNamedColor(dpy, cmap, occupied_bg_color, &color, &color);
@@ -98,8 +104,13 @@ drawpager(void) {
 
         XAllocNamedColor(dpy, cmap, fg_color, &color, &color);
         XSetForeground(dpy, gc, color.pixel);
-        XDrawString(dpy, pager, gc, x + 8, y + 16, key, strlen(key));
+        XDrawString(dpy, pager, gc, x + 8, y + 16, buffer, strlen(buffer));
     }
+
+    t = time(NULL);
+    tmp = localtime(&t);
+    strftime(buffer, LENGTH(buffer), "%Y-%m-%d %H:%M:%S", tmp);
+    XDrawString(dpy, pager, gc, 16, screen_height/2.5 + 16, buffer, strlen(buffer));
 }
 
 int
@@ -203,8 +214,8 @@ setup(void) {
     screen_width = attributes.width;
     screen_height = attributes.height;
 
-    pager = XCreateSimpleWindow(dpy, root, 0, screen_height - screen_height/2.5,
-                                screen_width, screen_height/2.5, 0,
+    pager = XCreateSimpleWindow(dpy, root, 0, screen_height - screen_height/2.5 - 32,
+                                screen_width, screen_height/2.5 + 32, 0,
                                 WhitePixel(dpy, screen),
                                 BlackPixel(dpy, screen));
     XMapWindow(dpy, pager);
