@@ -1,6 +1,6 @@
 DEBUG   = -O0 -ggdb -g3
 DEBUG   = -O3
-CFLAGS  = -Wall -pedantic -ansi -std=c99 $(DEBUG) -m32
+CFLAGS  = -Wall -pedantic -ansi -std=c99 $(DEBUG)
 LDFLAGS = -lX11
 BINARY  = hest
 VERSION = 0.1
