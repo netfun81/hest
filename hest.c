@@ -80,7 +80,7 @@ drawpager(void) {
     h = (screen_height/10 - 12);
 
     XSetForeground(dpy, gc, XBlackPixel(dpy, screen));
-    XFillRectangle(dpy, pager, gc, 0, 0, screen_width/2.5, screen_height/2.5 + 32 + 1);
+    XFillRectangle(dpy, pager, gc, 0, 0, screen_width/2.5, screen_height/2.5 + 16);
 
     for(i = 0; i < LENGTH(windows); ++i) {
         x = (i%10 + 1) * 10 + i%10 * w;
@@ -224,7 +224,7 @@ setup(void) {
     screen_height = attributes.height;
 
     pager = XCreateSimpleWindow(dpy, root, 0, screen_height - screen_height/2.5 - 32,
-                                screen_width, screen_height/2.5 + 32 + 1, 0,
+                                screen_width, screen_height/2.5 + 32, 0,
                                 WhitePixel(dpy, screen),
                                 BlackPixel(dpy, screen));
     XMapWindow(dpy, pager);
