@@ -130,7 +130,7 @@ keypress(XEvent* ev) {
     keysym = XKeycodeToKeysym(dpy, (KeyCode)kev->keycode, 0);
 
     if((kev->state & ControlMask || keysym == XK_Control_L || keysym == XK_Control_R) &&
-       (kev->state & Mod4Mask  || keysym == XK_Super_L || keysym == XK_Super_R)) {
+       (kev->state & Mod4Mask || keysym == XK_Super_L || keysym == XK_Super_R)) {
         XRaiseWindow(dpy, pager);
         drawpager();
     }
