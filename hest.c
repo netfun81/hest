@@ -252,8 +252,6 @@ showhide(void) {
         XRaiseWindow(dpy, windows[current_window]);
     } else {
         XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
-        XRaiseWindow(dpy, pager);
-        drawpager();
     }
 
     for(i = 0; i < LENGTH(windows); ++i)
