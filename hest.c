@@ -226,7 +226,7 @@ setup(void) {
     screen_width = attributes.width;
     screen_height = attributes.height;
 
-    pager = XCreateSimpleWindow(dpy, root, 0, screen_height - screen_height/2.5 - 32,
+    pager = XCreateSimpleWindow(dpy, root, 0, screen_height,
                                 screen_width, screen_height/2.5 + 32 + 1, 0,
                                 WhitePixel(dpy, screen),
                                 BlackPixel(dpy, screen));
