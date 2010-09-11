@@ -92,6 +92,7 @@ drawpager(void) {
             XAllocNamedColor(dpy, cmap, occupied_bg_color, &color, &color);
         else
             XAllocNamedColor(dpy, cmap, vacant_bg_color, &color, &color);
+
         XSetForeground(dpy, gc, color.pixel);
         XFillRectangle(dpy, pager, gc, x, y, w, h);
 
@@ -99,6 +100,7 @@ drawpager(void) {
             XAllocNamedColor(dpy, cmap, current_border_color, &color, &color);
         else
             XAllocNamedColor(dpy, cmap, normal_border_color, &color, &color);
+
         XSetForeground(dpy, gc, color.pixel);
         XDrawRectangle(dpy, pager, gc, x, y, w, h);
 
@@ -133,6 +135,7 @@ keypress(XEvent* ev) {
        (kev->state & Mod4Mask || keysym == XK_Super_L || keysym == XK_Super_R)) {
         XRaiseWindow(dpy, pager);
         XMoveResizeWindow(dpy, pager, 0, screen_height - screen_height/2.5 - 32, screen_width, screen_height/2.5 + 32 + 1);
+
         drawpager();
     }
 
