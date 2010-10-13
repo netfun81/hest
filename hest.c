@@ -8,6 +8,7 @@
 
 #define LENGTH(array)   (sizeof(array) / sizeof(array[0]))
 
+static void configurenotify(XEvent*);
 static void destroynotify(XEvent*);
 static void drawpager(void);
 static int findvacancy(void);
@@ -26,6 +27,7 @@ static unsigned int current_window = 0;
 static Display* dpy;
 static GC gc;
 static void(*handler[LASTEvent])(XEvent*) = {
+    [ConfigureNotify] = configurenotify,
     [DestroyNotify] = destroynotify,
     [KeyPress] = keypress,
     [KeyRelease] = keyrelease,
@@ -52,6 +54,20 @@ static const char* fg_color              = "#ffeedd";
 static const char* normal_border_color   = "#445566";
 static const char* occupied_bg_color     = "#223344";
 static const char* vacant_bg_color       = "#000000";
+
+void
+configurenotify(XEvent* ev) {
+    XWindowAttributes wa;
+
+    ev = ev;
+
+    XGetWindowAttributes(dpy, root, &wa);
+
+    screen_width = wa.width;
+    screen_height = wa.height;
+
+    XMoveResizeWindow(dpy, windows[current_window], 0, 0, screen_width, screen_height);
+}
 
 void
 destroynotify(XEvent* ev) {
