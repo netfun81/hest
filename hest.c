@@ -22,7 +22,7 @@ static void spawn(const char**);
 static void view(int);
 static int xerror(Display*, XErrorEvent*);
 
-static int current_window = 0;
+static unsigned int current_window = 0;
 static Display* dpy;
 static GC gc;
 static void(*handler[LASTEvent])(XEvent*) = {
@@ -39,7 +39,7 @@ static int screen_height;
 static int screen_width;
 static Window windows[40];
 
-static int keys[40] = {
+static KeySym keys[40] = {
     XK_1, XK_2, XK_3, XK_4, XK_5, XK_6, XK_7, XK_8,     XK_9,      XK_0,
     XK_q, XK_w, XK_e, XK_r, XK_t, XK_y, XK_u, XK_i,     XK_o,      XK_p,
     XK_a, XK_s, XK_d, XK_f, XK_g, XK_h, XK_j, XK_k,     XK_l,      XK_semicolon,
@@ -55,7 +55,7 @@ static const char* vacant_bg_color       = "#000000";
 
 void
 destroynotify(XEvent* ev) {
-    int i;
+    unsigned int i;
     XDestroyWindowEvent* dwe = &ev->xdestroywindow;
 
     for(i = 0; i < LENGTH(windows); ++i)
@@ -71,7 +71,7 @@ drawpager(void) {
     char buffer[256];
     Colormap cmap = DefaultColormap(dpy, screen);
     XColor color;
-    int i;
+    unsigned int i;
     int x, y, h, w;
     time_t t;
     struct tm* tmp;
@@ -117,7 +117,7 @@ drawpager(void) {
 
 int
 findvacancy(void) {
-    int i;
+    unsigned int i;
 
     for(i = 0; i < LENGTH(windows) && windows[i]; ++i);
     return i;
@@ -125,7 +125,7 @@ findvacancy(void) {
 
 void
 keypress(XEvent* ev) {
-    int i;
+    unsigned int i;
     KeySym keysym;
     XKeyEvent* kev = &ev->xkey;
 
@@ -201,7 +201,7 @@ run(void) {
 
 void
 setup(void) {
-    int i;
+    unsigned int i;
     static const int modifiers[] = {
         Mod4Mask,
         Mod4Mask | ShiftMask,
@@ -250,7 +250,7 @@ setup(void) {
 
 void
 showhide(void) {
-    int i;
+    unsigned int i;
 
     if(windows[current_window]) {
         XMoveResizeWindow(dpy, windows[current_window], 0, 0, screen_width, screen_height);
@@ -295,7 +295,11 @@ view(int window) {
 
 int
 xerror(Display* dpy, XErrorEvent* ee) {
+    dpy = dpy;
+    ee = ee;
+
     fprintf(stderr, "Got an XErrorEvent.\n");
+
     return 0;
 }
 
