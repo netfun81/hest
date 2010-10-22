@@ -3,60 +3,60 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <X11/keysym.h>
+
 #include <X11/Xlib.h>
+#include <X11/keysym.h>
 
 #define LENGTH(array)   (sizeof(array) / sizeof(array[0]))
 
-static void configurenotify(XEvent*);
-static void destroynotify(XEvent*);
+static void configurenotify(XEvent *);
+static void destroynotify(XEvent *);
 static void drawpager(void);
 static int findvacancy(void);
-static void keypress(XEvent*);
-static void keyrelease(XEvent*);
-static void maprequest(XEvent*);
+static void keypress(XEvent *);
+static void keyrelease(XEvent *);
+static void maprequest(XEvent *);
 static void run(void);
 static void setup(void);
 static void showhide(void);
 static void swap(int, int);
-static void spawn(const char**);
+static void spawn(const char **);
 static void view(int);
-static int xerror(Display*, XErrorEvent*);
+static int xerror(Display *, XErrorEvent *);
 
-static unsigned int current_window = 0;
-static Display* dpy;
+static unsigned char current_window = 0;
+static Display *dpy;
 static GC gc;
-static void(*handler[LASTEvent])(XEvent*) = {
+static void(*handler[LASTEvent])(XEvent *) = {
     [ConfigureNotify] = configurenotify,
     [DestroyNotify] = destroynotify,
     [KeyPress] = keypress,
     [KeyRelease] = keyrelease,
     [MapRequest] = maprequest
 };
-static int last_window = 0;
+static unsigned char last_window = 0;
 static Window pager;
 static Window root;
-static int screen;
-static int screen_height;
-static int screen_width;
+static short screen;
+static unsigned short screen_height;
+static unsigned short screen_width;
 static Window windows[40];
-
 static KeySym keys[40] = {
     XK_1, XK_2, XK_3, XK_4, XK_5, XK_6, XK_7, XK_8,     XK_9,      XK_0,
     XK_q, XK_w, XK_e, XK_r, XK_t, XK_y, XK_u, XK_i,     XK_o,      XK_p,
     XK_a, XK_s, XK_d, XK_f, XK_g, XK_h, XK_j, XK_k,     XK_l,      XK_semicolon,
     XK_z, XK_x, XK_c, XK_v, XK_b, XK_n, XK_m, XK_comma, XK_period, XK_slash
 };
-static const char* menu_cmd[]            = {"dmenu_run", NULL};
-static const char* term_cmd[]            = {"urxvt", NULL};
-static const char* current_border_color  = "#bbccff";
-static const char* fg_color              = "#ffeedd";
-static const char* normal_border_color   = "#445566";
-static const char* occupied_bg_color     = "#223344";
-static const char* vacant_bg_color       = "#000000";
+static const char *menu_cmd[]            = {"dmenu_run", NULL};
+static const char *term_cmd[]            = {"urxvt", NULL};
+static const char *current_border_color  = "#bbccff";
+static const char *fg_color              = "#ffeedd";
+static const char *normal_border_color   = "#445566";
+static const char *occupied_bg_color     = "#223344";
+static const char *vacant_bg_color       = "#000000";
 
 void
-configurenotify(XEvent* ev) {
+configurenotify(XEvent *ev) {
     XWindowAttributes wa;
 
     ev = ev;
@@ -70,9 +70,9 @@ configurenotify(XEvent* ev) {
 }
 
 void
-destroynotify(XEvent* ev) {
+destroynotify(XEvent *ev) {
     unsigned int i;
-    XDestroyWindowEvent* dwe = &ev->xdestroywindow;
+    XDestroyWindowEvent *dwe = &ev->xdestroywindow;
 
     for(i = 0; i < LENGTH(windows); ++i)
         if(windows[i] == dwe->window)
@@ -90,7 +90,7 @@ drawpager(void) {
     unsigned int i;
     int x, y, h, w;
     time_t t;
-    struct tm* tmp;
+    struct tm *tmp;
 
     w = (screen_width/10 - 12);
     h = (screen_height/10 - 12);
@@ -140,10 +140,10 @@ findvacancy(void) {
 }
 
 void
-keypress(XEvent* ev) {
+keypress(XEvent *ev) {
     unsigned int i;
     KeySym keysym;
-    XKeyEvent* kev = &ev->xkey;
+    XKeyEvent *kev = &ev->xkey;
 
     keysym = XKeycodeToKeysym(dpy, (KeyCode)kev->keycode, 0);
 
@@ -172,9 +172,9 @@ keypress(XEvent* ev) {
 }
 
 void
-keyrelease(XEvent* ev) {
+keyrelease(XEvent *ev) {
     KeySym keysym;
-    XKeyEvent* kev = &ev->xkey;
+    XKeyEvent *kev = &ev->xkey;
 
     keysym = XKeycodeToKeysym(dpy, (KeyCode)kev->keycode, 0);
 
@@ -183,9 +183,9 @@ keyrelease(XEvent* ev) {
 }
 
 void
-maprequest(XEvent* ev) {
+maprequest(XEvent *ev) {
     static XWindowAttributes wa;
-    XMapRequestEvent* mrev = &ev->xmaprequest;
+    XMapRequestEvent *mrev = &ev->xmaprequest;
 
     if(!XGetWindowAttributes(dpy, mrev->window, &wa))
         return;
@@ -288,7 +288,7 @@ swap(int a, int b) {
 }
 
 void
-spawn(const char* argv[]) {
+spawn(const char *argv[]) {
     int pid;
 
     if(!(pid = fork())) {
@@ -307,7 +307,7 @@ view(int window) {
 }
 
 int
-xerror(Display* dpy, XErrorEvent* ee) {
+xerror(Display *dpy, XErrorEvent *ee) {
     dpy = dpy;
     ee = ee;
 
