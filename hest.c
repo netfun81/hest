@@ -149,9 +149,7 @@ keypress(XEvent* ev) {
 
     if((kev->state & ControlMask || keysym == XK_Control_L || keysym == XK_Control_R) &&
        (kev->state & Mod4Mask || keysym == XK_Super_L || keysym == XK_Super_R)) {
-        XRaiseWindow(dpy, pager);
-        XMoveResizeWindow(dpy, pager, 0, screen_height - screen_height/2.5 - 32, screen_width, screen_height/2.5 + 32 + 1);
-
+        XMapRaised(dpy, pager);
         drawpager();
     }
 
@@ -180,10 +178,8 @@ keyrelease(XEvent* ev) {
 
     keysym = XKeycodeToKeysym(dpy, (KeyCode)kev->keycode, 0);
 
-    if(keysym == XK_Control_L || keysym == XK_Control_R || keysym == XK_Super_L || keysym == XK_Super_R) {
-        XMoveResizeWindow(dpy, pager, 0, screen_height, screen_width, screen_height/2.5 + 32 + 1);
-        XLowerWindow(dpy, pager);
-    }
+    if(keysym == XK_Control_L || keysym == XK_Control_R || keysym == XK_Super_L || keysym == XK_Super_R)
+        XUnmapWindow(dpy, pager);
 }
 
 void
@@ -249,7 +245,8 @@ setup(void) {
                                 screen_width, screen_height/2.5 + 32 + 1, 0,
                                 WhitePixel(dpy, screen),
                                 BlackPixel(dpy, screen));
-    XMapWindow(dpy, pager);
+
+    XMoveResizeWindow(dpy, pager, 0, screen_height - screen_height/2.5 - 32, screen_width, screen_height/2.5 + 32 + 1);
 
     gc = XCreateGC(dpy, pager, 0, NULL);
 
