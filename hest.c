@@ -12,16 +12,16 @@
 static void configurenotify(XEvent *);
 static void destroynotify(XEvent *);
 static void drawpager(void);
-static int findvacancy(void);
+static unsigned char findvacancy(void);
 static void keypress(XEvent *);
 static void keyrelease(XEvent *);
 static void maprequest(XEvent *);
 static void run(void);
 static void setup(void);
 static void showhide(void);
-static void swap(int, int);
+static void swap(unsigned char, unsigned char);
 static void spawn(const char **);
-static void view(int);
+static void view(unsigned char);
 static int xerror(Display *, XErrorEvent *);
 
 static unsigned char current_window = 0;
@@ -71,7 +71,7 @@ configurenotify(XEvent *ev) {
 
 void
 destroynotify(XEvent *ev) {
-    unsigned int i;
+    unsigned char i;
     XDestroyWindowEvent *dwe = &ev->xdestroywindow;
 
     for(i = 0; i < LENGTH(windows); ++i)
@@ -87,8 +87,8 @@ drawpager(void) {
     char buffer[256];
     Colormap cmap = DefaultColormap(dpy, screen);
     XColor color;
-    unsigned int i;
-    int x, y, h, w;
+    unsigned char i;
+    unsigned short x, y, h, w;
     time_t t;
     struct tm *tmp;
 
@@ -131,17 +131,18 @@ drawpager(void) {
     XDrawString(dpy, pager, gc, 16, screen_height/2.5 + 16, buffer, strlen(buffer));
 }
 
-int
+unsigned char
 findvacancy(void) {
-    unsigned int i;
+    unsigned char i;
 
     for(i = 0; i < LENGTH(windows) && windows[i]; ++i);
+
     return i;
 }
 
 void
 keypress(XEvent *ev) {
-    unsigned int i;
+    unsigned char i;
     KeySym keysym;
     XKeyEvent *kev = &ev->xkey;
 
@@ -213,8 +214,8 @@ run(void) {
 
 void
 setup(void) {
-    unsigned int i;
-    static const int modifiers[] = {
+    unsigned char i;
+    static const KeySym modifiers[] = {
         Mod4Mask,
         Mod4Mask | ShiftMask,
         Mod4Mask | ShiftMask | ControlMask,
@@ -263,7 +264,7 @@ setup(void) {
 
 void
 showhide(void) {
-    unsigned int i;
+    unsigned char i;
 
     if(windows[current_window]) {
         XMoveResizeWindow(dpy, windows[current_window], 0, 0, screen_width, screen_height);
@@ -279,7 +280,7 @@ showhide(void) {
 }
 
 void
-swap(int a, int b) {
+swap(unsigned char a, unsigned char b) {
     Window temp = windows[a];
 
     windows[a] = windows[b];
@@ -289,7 +290,7 @@ swap(int a, int b) {
 
 void
 spawn(const char *argv[]) {
-    int pid;
+    pid_t pid;
 
     if(!(pid = fork())) {
         close(ConnectionNumber(dpy));
@@ -301,7 +302,7 @@ spawn(const char *argv[]) {
 }
 
 void
-view(int window) {
+view(unsigned char window) {
     current_window = last_window = window;
     showhide();
 }
