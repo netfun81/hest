@@ -1,4 +1,4 @@
-CFLAGS  = -Wall -Wextra -pedantic -ansi -std=gnu99 -O3
+CFLAGS  = -std=c99 -Wall -Wextra -pedantic -O3
 LDFLAGS = -lX11
 BINARY  = hest
 VERSION = 0.1
