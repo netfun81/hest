@@ -7,24 +7,23 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 
-#define LENGTH(array)   (sizeof(array) / sizeof(array[0]))
+#define LENGTH(array) (sizeof(array) / sizeof(array[0]))
+
+typedef unsigned char HestWindow;
 
 static void configurenotify(XEvent *);
 static void destroynotify(XEvent *);
 static void drawpager(void);
-static unsigned char findvacancy(void);
 static void keypress(XEvent *);
 static void keyrelease(XEvent *);
 static void maprequest(XEvent *);
-static void run(void);
 static void setup(void);
-static void showhide(void);
-static void swap(unsigned char, unsigned char);
+static void swap(HestWindow);
 static void spawn(const char **);
-static void view(unsigned char);
+static void view(HestWindow);
 static int xerror(Display *, XErrorEvent *);
 
-static unsigned char current_window = 0;
+static HestWindow current_window = 0;
 static Display *dpy;
 static GC gc;
 static void(*handler[LASTEvent])(XEvent *) = {
@@ -34,7 +33,6 @@ static void(*handler[LASTEvent])(XEvent *) = {
     [KeyRelease] = keyrelease,
     [MapRequest] = maprequest
 };
-static unsigned char last_window = 0;
 static Window pager;
 static Window root;
 static short screen;
@@ -71,15 +69,15 @@ configurenotify(XEvent *ev) {
 
 void
 destroynotify(XEvent *ev) {
-    unsigned char i;
+    HestWindow i;
     XDestroyWindowEvent *dwe = &ev->xdestroywindow;
 
     for(i = 0; i < LENGTH(windows); ++i)
         if(windows[i] == dwe->window)
-            memset(&windows[i], 0, sizeof(Window));
+            memset(&windows[i], '\0', sizeof(Window));
 
-    if(!windows[current_window])
-        view(last_window);
+    if(windows[current_window])
+        XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
 }
 
 void
@@ -87,7 +85,7 @@ drawpager(void) {
     char buffer[256];
     Colormap cmap = DefaultColormap(dpy, screen);
     XColor color;
-    unsigned char i;
+    HestWindow i;
     unsigned short x, y, h, w;
     time_t t;
     struct tm *tmp;
@@ -131,18 +129,9 @@ drawpager(void) {
     XDrawString(dpy, pager, gc, 16, screen_height/2.5 + 16, buffer, strlen(buffer));
 }
 
-unsigned char
-findvacancy(void) {
-    unsigned char i;
-
-    for(i = 0; i < LENGTH(windows) && windows[i]; ++i);
-
-    return i;
-}
-
 void
 keypress(XEvent *ev) {
-    unsigned char i;
+    unsigned long i;
     KeySym keysym;
     XKeyEvent *kev = &ev->xkey;
 
@@ -164,9 +153,10 @@ keypress(XEvent *ev) {
             for(i = 0; i < LENGTH(keys); ++i)
                 if(keys[i] == keysym) {
                     if(kev->state & ShiftMask)
-                        swap(current_window, i);
-                    else
+                        swap(i);
+                    else if(i != current_window)
                         view(i);
+
                     return;
                 }
     }
@@ -191,25 +181,16 @@ maprequest(XEvent *ev) {
     if(!XGetWindowAttributes(dpy, mrev->window, &wa))
         return;
 
-    XMapWindow(dpy, mrev->window);
-    if(!windows[current_window])
-        windows[current_window] = mrev->window;
-    else {
-        last_window = current_window;
-        current_window = findvacancy();
-        windows[current_window] = mrev->window;
+    if(windows[current_window]) {
+        XUnmapWindow(dpy, windows[current_window]);
+        for(current_window = 0; current_window < LENGTH(windows) && windows[current_window]; ++current_window);
     }
 
-    showhide();
-}
+    windows[current_window] = mrev->window;
 
-void
-run(void) {
-    XEvent ev;
-
-    while(!XNextEvent(dpy, &ev))
-        if(handler[ev.type])
-            handler[ev.type](&ev);
+    XMoveResizeWindow(dpy, windows[current_window], 0, 0, screen_width, screen_height);
+    XMapRaised(dpy, windows[current_window]);
+    XSetInputFocus(dpy, windows[current_window], RevertToPointerRoot, CurrentTime);
 }
 
 void
@@ -251,41 +232,23 @@ setup(void) {
 
     gc = XCreateGC(dpy, pager, 0, NULL);
 
-    XSelectInput(dpy, root, KeyPressMask | SubstructureNotifyMask
-                 | SubstructureRedirectMask);
-
+    XSelectInput(dpy, root, KeyPressMask | SubstructureNotifyMask | SubstructureRedirectMask);
     XGrabKey(dpy, XKeysymToKeycode(dpy, XK_Super_L), AnyModifier, root, False, GrabModeAsync, GrabModeAsync);
     XGrabKey(dpy, XKeysymToKeycode(dpy, XK_Super_R), AnyModifier, root, False, GrabModeAsync, GrabModeAsync);
     for(i = 0; i < LENGTH(modifiers); ++i)
         XGrabKey(dpy, AnyKey, modifiers[i], root, True, GrabModeAsync, GrabModeAsync);
-
-    showhide();
 }
 
 void
-showhide(void) {
-    unsigned char i;
+swap(HestWindow new_window) {
+    Window temp_window = windows[current_window];
 
-    if(windows[current_window]) {
-        XMoveResizeWindow(dpy, windows[current_window], 0, 0, screen_width, screen_height);
-        XSetInputFocus(dpy, windows[current_window], RevertToPointerRoot, CurrentTime);
-        XRaiseWindow(dpy, windows[current_window]);
-    } else {
-        XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
-    }
+    windows[current_window] = windows[new_window];
+    windows[new_window] = temp_window;
 
-    for(i = 0; i < LENGTH(windows); ++i)
-        if(windows[i] && i != current_window)
-            XMoveResizeWindow(dpy, windows[i], 0, screen_height, screen_width, screen_height);
-}
-
-void
-swap(unsigned char a, unsigned char b) {
-    Window temp = windows[a];
-
-    windows[a] = windows[b];
-    windows[b] = temp;
-    showhide();
+    XMapRaised(dpy, windows[current_window]);
+    XSetInputFocus(dpy, windows[current_window] ? windows[current_window] : root, RevertToPointerRoot, CurrentTime);
+    XUnmapWindow(dpy, windows[new_window]);
 }
 
 void
@@ -302,25 +265,30 @@ spawn(const char *argv[]) {
 }
 
 void
-view(unsigned char window) {
-    current_window = last_window = window;
-    showhide();
+view(HestWindow window) {
+    XMapRaised(dpy, windows[window]);
+    XSetInputFocus(dpy, windows[window] ? windows[window] : root, RevertToPointerRoot, CurrentTime);
+    XUnmapWindow(dpy, windows[current_window]);
+
+    current_window = window;
 }
 
 int
 xerror(Display *dpy, XErrorEvent *ee) {
-    dpy = dpy;
-    ee = ee;
-
-    fprintf(stderr, "Got an XErrorEvent.\n");
+    fprintf(stderr, "Got an XErrorEvent: %p, %p\n", (void *)dpy, (void *)ee);
 
     return 0;
 }
 
 int
 main(void) {
+    XEvent ev;
+
     setup();
-    run();
+
+    while(!XNextEvent(dpy, &ev))
+        if(handler[ev.type])
+            handler[ev.type](&ev);
 
     return EXIT_SUCCESS;
 }
