@@ -11,28 +11,9 @@
 
 typedef unsigned char HestWindow;
 
-static void configurenotify(XEvent *);
-static void destroynotify(XEvent *);
-static void drawpager(void);
-static void keypress(XEvent *);
-static void keyrelease(XEvent *);
-static void maprequest(XEvent *);
-static void setup(void);
-static void swap(HestWindow);
-static void spawn(const char **);
-static void view(HestWindow);
-static int xerror(Display *, XErrorEvent *);
-
 static HestWindow current_window = 0;
 static Display *dpy;
 static GC gc;
-static void(*handler[LASTEvent])(XEvent *) = {
-    [ConfigureNotify] = configurenotify,
-    [DestroyNotify] = destroynotify,
-    [KeyPress] = keypress,
-    [KeyRelease] = keyrelease,
-    [MapRequest] = maprequest
-};
 static Window pager;
 static Window root;
 static short screen;
@@ -53,34 +34,7 @@ static const char *normal_border_color   = "#445566";
 static const char *occupied_bg_color     = "#223344";
 static const char *vacant_bg_color       = "#000000";
 
-void
-configurenotify(XEvent *ev) {
-    XWindowAttributes wa;
-
-    ev = ev;
-
-    XGetWindowAttributes(dpy, root, &wa);
-
-    screen_width = wa.width;
-    screen_height = wa.height;
-
-    XMoveResizeWindow(dpy, windows[current_window], 0, 0, screen_width, screen_height);
-}
-
-void
-destroynotify(XEvent *ev) {
-    HestWindow i;
-    XDestroyWindowEvent *dwe = &ev->xdestroywindow;
-
-    for(i = 0; i < LENGTH(windows); ++i)
-        if(windows[i] == dwe->window)
-            memset(&windows[i], '\0', sizeof(Window));
-
-    if(windows[current_window])
-        XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
-}
-
-void
+static void
 drawpager(void) {
     char buffer[256];
     Colormap cmap = DefaultColormap(dpy, screen);
@@ -129,7 +83,68 @@ drawpager(void) {
     XDrawString(dpy, pager, gc, 16, screen_height/2.5 + 16, buffer, strlen(buffer));
 }
 
-void
+static void
+swap(HestWindow new_window) {
+    Window temp_window = windows[current_window];
+
+    windows[current_window] = windows[new_window];
+    windows[new_window] = temp_window;
+
+    XMapRaised(dpy, windows[current_window]);
+    XSetInputFocus(dpy, windows[current_window] ? windows[current_window] : root, RevertToPointerRoot, CurrentTime);
+    XUnmapWindow(dpy, windows[new_window]);
+}
+
+static void
+spawn(const char *argv[]) {
+    pid_t pid;
+
+    if(!(pid = fork())) {
+        close(ConnectionNumber(dpy));
+        setsid();
+        execvp(argv[0], (char**)argv);
+        fprintf(stderr, "Couldn't execvp.\n");
+        exit(0);
+    }
+}
+
+static void
+view(HestWindow window) {
+    XMapRaised(dpy, windows[window]);
+    XSetInputFocus(dpy, windows[window] ? windows[window] : root, RevertToPointerRoot, CurrentTime);
+    XUnmapWindow(dpy, windows[current_window]);
+
+    current_window = window;
+}
+
+static void
+configurenotify(XEvent *ev) {
+    XWindowAttributes wa;
+
+    ev = ev;
+
+    XGetWindowAttributes(dpy, root, &wa);
+
+    screen_width = wa.width;
+    screen_height = wa.height;
+
+    XMoveResizeWindow(dpy, windows[current_window], 0, 0, screen_width, screen_height);
+}
+
+static void
+destroynotify(XEvent *ev) {
+    HestWindow i;
+    XDestroyWindowEvent *dwe = &ev->xdestroywindow;
+
+    for(i = 0; i < LENGTH(windows); ++i)
+        if(windows[i] == dwe->window)
+            memset(&windows[i], '\0', sizeof(Window));
+
+    if(windows[current_window])
+        XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
+}
+
+static void
 keypress(XEvent *ev) {
     unsigned long i;
     KeySym keysym;
@@ -162,7 +177,7 @@ keypress(XEvent *ev) {
     }
 }
 
-void
+static void
 keyrelease(XEvent *ev) {
     KeySym keysym;
     XKeyEvent *kev = &ev->xkey;
@@ -173,13 +188,31 @@ keyrelease(XEvent *ev) {
         XUnmapWindow(dpy, pager);
 }
 
-void
+static void
 maprequest(XEvent *ev) {
     static XWindowAttributes wa;
     XMapRequestEvent *mrev = &ev->xmaprequest;
+    HestWindow i;
 
     if(!XGetWindowAttributes(dpy, mrev->window, &wa))
         return;
+
+    fprintf(stderr, "Map request: %lu\n", mrev->window);
+
+    for(i = 0; i < LENGTH(windows); ++i) {
+        if(windows[i] == mrev->window) {
+            fprintf(stderr, "Return: %d, %lu\n", i, mrev->window);
+
+            if(i == current_window) {
+                XMoveResizeWindow(dpy, windows[current_window], 0, 0, screen_width, screen_height);
+                XMapRaised(dpy, windows[current_window]);
+                XSetInputFocus(dpy, windows[current_window], RevertToPointerRoot, CurrentTime);
+            }
+
+            return;
+        }
+    }
+    fprintf(stderr, "Continue.\n");
 
     if(windows[current_window]) {
         XUnmapWindow(dpy, windows[current_window]);
@@ -193,7 +226,14 @@ maprequest(XEvent *ev) {
     XSetInputFocus(dpy, windows[current_window], RevertToPointerRoot, CurrentTime);
 }
 
-void
+static int
+xerror(Display *dpy, XErrorEvent *ee) {
+    fprintf(stderr, "Got an XErrorEvent: %p, %p\n", (void *)dpy, (void *)ee);
+
+    return 0;
+}
+
+static void
 setup(void) {
     unsigned char i;
     static const KeySym modifiers[] = {
@@ -239,49 +279,15 @@ setup(void) {
         XGrabKey(dpy, AnyKey, modifiers[i], root, True, GrabModeAsync, GrabModeAsync);
 }
 
-void
-swap(HestWindow new_window) {
-    Window temp_window = windows[current_window];
-
-    windows[current_window] = windows[new_window];
-    windows[new_window] = temp_window;
-
-    XMapRaised(dpy, windows[current_window]);
-    XSetInputFocus(dpy, windows[current_window] ? windows[current_window] : root, RevertToPointerRoot, CurrentTime);
-    XUnmapWindow(dpy, windows[new_window]);
-}
-
-void
-spawn(const char *argv[]) {
-    pid_t pid;
-
-    if(!(pid = fork())) {
-        close(ConnectionNumber(dpy));
-        setsid();
-        execvp(argv[0], (char**)argv);
-        fprintf(stderr, "Couldn't execvp.\n");
-        exit(0);
-    }
-}
-
-void
-view(HestWindow window) {
-    XMapRaised(dpy, windows[window]);
-    XSetInputFocus(dpy, windows[window] ? windows[window] : root, RevertToPointerRoot, CurrentTime);
-    XUnmapWindow(dpy, windows[current_window]);
-
-    current_window = window;
-}
-
-int
-xerror(Display *dpy, XErrorEvent *ee) {
-    fprintf(stderr, "Got an XErrorEvent: %p, %p\n", (void *)dpy, (void *)ee);
-
-    return 0;
-}
-
 int
 main(void) {
+    static void(*handler[LASTEvent])(XEvent *) = {
+        [ConfigureNotify] = configurenotify,
+        [DestroyNotify] = destroynotify,
+        [KeyPress] = keypress,
+        [KeyRelease] = keyrelease,
+        [MapRequest] = maprequest
+    };
     XEvent ev;
 
     setup();
