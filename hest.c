@@ -11,14 +11,16 @@
 
 typedef unsigned char HestWindow;
 
-static HestWindow current_window = 0;
+static HestWindow curwin = 0;
+static HestWindow top = 0;
 static Display *dpy;
 static GC gc;
 static Window pager;
 static Window root;
 static short screen;
-static unsigned short screen_height;
-static unsigned short screen_width;
+static unsigned short sh;
+static unsigned short sw;
+static HestWindow stack[40];
 static Window windows[40];
 static KeySym keys[40] = {
     XK_1, XK_2, XK_3, XK_4, XK_5, XK_6, XK_7, XK_8,     XK_9,      XK_0,
@@ -44,15 +46,15 @@ drawpager(void) {
     time_t t;
     struct tm *tmp;
 
-    w = (screen_width/10 - 12);
-    h = (screen_height/10 - 12);
+    w = (sw/10 - 12);
+    h = (sh/10 - 12);
 
     XSetForeground(dpy, gc, XBlackPixel(dpy, screen));
-    XFillRectangle(dpy, pager, gc, 0, 0, screen_width/2.5, screen_height/2.5 + 32 + 1);
+    XFillRectangle(dpy, pager, gc, 0, 0, sw/2.5, sh/2.5 + 32 + 1);
 
     for(i = 0; i < LENGTH(windows); ++i) {
-        x = (i%10 + 1) * 10 + i%10 * w;
-        y = (i/10 + 1) * 10 + i/10 * h;
+        x = (i % 10 + 1) * 10 + i % 10 * w;
+        y = (i / 10 + 1) * 10 + i / 10 * h;
 
         strcpy(buffer, XKeysymToString(keys[i]));
 
@@ -64,7 +66,7 @@ drawpager(void) {
         XSetForeground(dpy, gc, color.pixel);
         XFillRectangle(dpy, pager, gc, x, y, w, h);
 
-        if(i == current_window)
+        if(i == curwin)
             XAllocNamedColor(dpy, cmap, current_border_color, &color, &color);
         else
             XAllocNamedColor(dpy, cmap, normal_border_color, &color, &color);
@@ -80,19 +82,35 @@ drawpager(void) {
     t = time(NULL);
     tmp = localtime(&t);
     strftime(buffer, LENGTH(buffer), "%Y-%m-%d %H:%M:%S", tmp);
-    XDrawString(dpy, pager, gc, 16, screen_height/2.5 + 16, buffer, strlen(buffer));
+    XDrawString(dpy, pager, gc, 16, sh/2.5 + 16, buffer, strlen(buffer));
 }
 
 static void
-swap(HestWindow new_window) {
-    Window temp_window = windows[current_window];
+showhide(void) {
+    HestWindow i;
 
-    windows[current_window] = windows[new_window];
-    windows[new_window] = temp_window;
+    if(windows[curwin]) {
+        XMapRaised(dpy, windows[curwin]);
+        XMoveResizeWindow(dpy, windows[curwin], 0, 0, sw, sh);
+        XSetInputFocus(dpy, windows[curwin], RevertToPointerRoot, CurrentTime);
+    } else {
+        XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
+    }
 
-    XMapRaised(dpy, windows[current_window]);
-    XSetInputFocus(dpy, windows[current_window] ? windows[current_window] : root, RevertToPointerRoot, CurrentTime);
-    XUnmapWindow(dpy, windows[new_window]);
+    for(i = 0; i < LENGTH(windows); ++i)
+        if(windows[i] && i != curwin)
+            XUnmapWindow(dpy, windows[i]);
+}
+
+static void
+swap(HestWindow a, HestWindow b) {
+    Window temp;
+
+    temp = windows[a];
+    windows[a] = windows[b];
+    windows[b] = temp;
+
+    showhide();
 }
 
 static void
@@ -110,11 +128,10 @@ spawn(const char *argv[]) {
 
 static void
 view(HestWindow window) {
-    XMapRaised(dpy, windows[window]);
-    XSetInputFocus(dpy, windows[window] ? windows[window] : root, RevertToPointerRoot, CurrentTime);
-    XUnmapWindow(dpy, windows[current_window]);
+    stack[0] = curwin = window;
+    top = 0;
 
-    current_window = window;
+    showhide();
 }
 
 static void
@@ -125,10 +142,10 @@ configurenotify(XEvent *ev) {
 
     XGetWindowAttributes(dpy, root, &wa);
 
-    screen_width = wa.width;
-    screen_height = wa.height;
+    sw = wa.width;
+    sh = wa.height;
 
-    XMoveResizeWindow(dpy, windows[current_window], 0, 0, screen_width, screen_height);
+    XMoveResizeWindow(dpy, windows[curwin], 0, 0, sw, sh);
 }
 
 static void
@@ -137,11 +154,15 @@ destroynotify(XEvent *ev) {
     XDestroyWindowEvent *dwe = &ev->xdestroywindow;
 
     for(i = 0; i < LENGTH(windows); ++i)
-        if(windows[i] == dwe->window)
+        if(windows[i] == dwe->window) {
             memset(&windows[i], '\0', sizeof(Window));
 
-    if(windows[current_window])
-        XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
+            if(i == curwin && top)
+                curwin = stack[--top];
+
+            showhide();
+            return;
+        }
 }
 
 static void
@@ -168,8 +189,8 @@ keypress(XEvent *ev) {
             for(i = 0; i < LENGTH(keys); ++i)
                 if(keys[i] == keysym) {
                     if(kev->state & ShiftMask)
-                        swap(i);
-                    else if(i != current_window)
+                        swap(i, curwin);
+                    else if(i != curwin)
                         view(i);
 
                     return;
@@ -184,7 +205,8 @@ keyrelease(XEvent *ev) {
 
     keysym = XKeycodeToKeysym(dpy, (KeyCode)kev->keycode, 0);
 
-    if(keysym == XK_Control_L || keysym == XK_Control_R || keysym == XK_Super_L || keysym == XK_Super_R)
+    if(keysym == XK_Control_L || keysym == XK_Control_R ||
+       keysym == XK_Super_L || keysym == XK_Super_R)
         XUnmapWindow(dpy, pager);
 }
 
@@ -197,33 +219,18 @@ maprequest(XEvent *ev) {
     if(!XGetWindowAttributes(dpy, mrev->window, &wa))
         return;
 
-    fprintf(stderr, "Map request: %lu\n", mrev->window);
-
-    for(i = 0; i < LENGTH(windows); ++i) {
+    for(i = 0; i < LENGTH(windows); ++i)
         if(windows[i] == mrev->window) {
-            fprintf(stderr, "Return: %d, %lu\n", i, mrev->window);
-
-            if(i == current_window) {
-                XMoveResizeWindow(dpy, windows[current_window], 0, 0, screen_width, screen_height);
-                XMapRaised(dpy, windows[current_window]);
-                XSetInputFocus(dpy, windows[current_window], RevertToPointerRoot, CurrentTime);
-            }
-
+            showhide();
             return;
         }
-    }
-    fprintf(stderr, "Continue.\n");
 
-    if(windows[current_window]) {
-        XUnmapWindow(dpy, windows[current_window]);
-        for(current_window = 0; current_window < LENGTH(windows) && windows[current_window]; ++current_window);
-    }
+    if(windows[curwin])
+        for(curwin = 0; curwin < LENGTH(windows) && windows[curwin]; ++curwin);
 
-    windows[current_window] = mrev->window;
-
-    XMoveResizeWindow(dpy, windows[current_window], 0, 0, screen_width, screen_height);
-    XMapRaised(dpy, windows[current_window]);
-    XSetInputFocus(dpy, windows[current_window], RevertToPointerRoot, CurrentTime);
+    stack[++top] = curwin;
+    windows[curwin] = mrev->window;
+    showhide();
 }
 
 static int
@@ -260,15 +267,15 @@ setup(void) {
 
     XSetErrorHandler(xerror);
     XGetWindowAttributes(dpy, root, &attributes);
-    screen_width = attributes.width;
-    screen_height = attributes.height;
+    sw = attributes.width;
+    sh = attributes.height;
 
-    pager = XCreateSimpleWindow(dpy, root, 0, screen_height,
-                                screen_width, screen_height/2.5 + 32 + 1, 0,
+    pager = XCreateSimpleWindow(dpy, root, 0, sh,
+                                sw, sh/2.5 + 32 + 1, 0,
                                 WhitePixel(dpy, screen),
                                 BlackPixel(dpy, screen));
 
-    XMoveResizeWindow(dpy, pager, 0, screen_height - screen_height/2.5 - 32, screen_width, screen_height/2.5 + 32 + 1);
+    XMoveResizeWindow(dpy, pager, 0, sh - sh/2.5 - 32, sw, sh/2.5 + 32 + 1);
 
     gc = XCreateGC(dpy, pager, 0, NULL);
 
