@@ -110,6 +110,7 @@ swap(HestWindow a, HestWindow b) {
     windows[a] = windows[b];
     windows[b] = temp;
 
+    stack[top = 0] = curwin;
     showhide();
 }
 
@@ -128,9 +129,7 @@ spawn(const char *argv[]) {
 
 static void
 view(HestWindow window) {
-    stack[0] = curwin = window;
-    top = 0;
-
+    stack[top = 0] = curwin = window;
     showhide();
 }
 
