@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -123,7 +124,7 @@ spawn(const char *argv[]) {
         setsid();
         execvp(argv[0], (char**)argv);
         fprintf(stderr, "Couldn't execvp.\n");
-        exit(0);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -253,6 +254,8 @@ setup(void) {
         Mod4Mask |             ControlMask | Mod5Mask,
     };
     XWindowAttributes attributes;
+
+    signal(SIGCHLD, SIG_IGN);
 
     memset(&windows, 0, sizeof(windows));
 
