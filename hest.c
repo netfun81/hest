@@ -12,18 +12,28 @@
 
 typedef unsigned char HestWindow;
 
-static HestWindow curwin = 0;
-static HestWindow top = 0;
+typedef struct {
+    unsigned short x;
+    unsigned short y;
+    unsigned short w;
+    unsigned short h;
+    HestWindow curwin; // = 0
+    Window windows[40];
+} HestMonitor;
+
 static Display *dpy;
 static GC gc;
+static unsigned char curmon = 0;
+static KeySym monitor_keys[12] = {
+    XK_F1, XK_F2,  XK_F3,  XK_F4,
+    XK_F5, XK_F6,  XK_F7,  XK_F8,
+    XK_F9, XK_F10, XK_F11, XK_F12
+};
+static HestMonitor monitors[12];
 static Window pager;
 static Window root;
 static short screen;
-static unsigned short sh;
-static unsigned short sw;
-static HestWindow stack[40];
-static Window windows[40];
-static KeySym keys[40] = {
+static KeySym window_keys[40] = {
     XK_1, XK_2, XK_3, XK_4, XK_5, XK_6, XK_7, XK_8,     XK_9,      XK_0,
     XK_q, XK_w, XK_e, XK_r, XK_t, XK_y, XK_u, XK_i,     XK_o,      XK_p,
     XK_a, XK_s, XK_d, XK_f, XK_g, XK_h, XK_j, XK_k,     XK_l,      XK_semicolon,
@@ -46,20 +56,25 @@ drawpager(void) {
     unsigned short x, y, h, w;
     time_t t;
     struct tm *tmp;
+    HestMonitor *mon = &monitors[curmon];
 
-    w = (sw/10 - 12);
-    h = (sh/10 - 12);
+    XMoveResizeWindow(dpy, pager, mon->x, mon->h - mon->h/2.5 - 32, mon->w,
+            mon->h / 2.5 + 32 + 1);
+
+    w = (mon->w / 10 - 12);
+    h = (mon->h / 10 - 12);
 
     XSetForeground(dpy, gc, XBlackPixel(dpy, screen));
-    XFillRectangle(dpy, pager, gc, 0, 0, sw/2.5, sh/2.5 + 32 + 1);
+    XFillRectangle(dpy, pager, gc, 0, 0, mon->w / 2.5,
+            mon->h / 2.5 + 32 + 1);
 
-    for(i = 0; i < LENGTH(windows); ++i) {
+    for(i = 0; i < LENGTH(mon->windows); ++i) {
         x = (i % 10 + 1) * 10 + i % 10 * w;
         y = (i / 10 + 1) * 10 + i / 10 * h;
 
-        strcpy(buffer, XKeysymToString(keys[i]));
+        strcpy(buffer, XKeysymToString(window_keys[i]));
 
-        if(windows[i])
+        if(mon->windows[i])
             XAllocNamedColor(dpy, cmap, occupied_bg_color, &color, &color);
         else
             XAllocNamedColor(dpy, cmap, vacant_bg_color, &color, &color);
@@ -67,7 +82,7 @@ drawpager(void) {
         XSetForeground(dpy, gc, color.pixel);
         XFillRectangle(dpy, pager, gc, x, y, w, h);
 
-        if(i == curwin)
+        if(i == mon->curwin)
             XAllocNamedColor(dpy, cmap, current_border_color, &color, &color);
         else
             XAllocNamedColor(dpy, cmap, normal_border_color, &color, &color);
@@ -83,36 +98,31 @@ drawpager(void) {
     t = time(NULL);
     tmp = localtime(&t);
     strftime(buffer, LENGTH(buffer), "%Y-%m-%d %H:%M:%S", tmp);
-    XDrawString(dpy, pager, gc, 16, sh/2.5 + 16, buffer, strlen(buffer));
+    XDrawString(dpy, pager, gc, 16, mon->h/2.5 + 16, buffer, strlen(buffer));
 }
 
+// Multimonitored!
 static void
 showhide(void) {
-    HestWindow i;
+    for(unsigned char m = 0; m < LENGTH(monitors); ++m) {
+        HestMonitor *mon = &monitors[m];
 
-    if(windows[curwin]) {
-        XMapRaised(dpy, windows[curwin]);
-        XMoveResizeWindow(dpy, windows[curwin], 0, 0, sw, sh);
-        XSetInputFocus(dpy, windows[curwin], RevertToPointerRoot, CurrentTime);
-    } else {
-        XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
+        if(mon->windows[mon->curwin]) {
+            XMapRaised(dpy, mon->windows[mon->curwin]);
+            XMoveResizeWindow(dpy, mon->windows[mon->curwin],
+                    mon->x, mon->y, mon->w, mon->h);
+            if(m == curmon)
+                XSetInputFocus(dpy, mon->windows[mon->curwin],
+                        RevertToPointerRoot, CurrentTime);
+        } else if(m == curmon) {
+            XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
+        }
+
+        for(HestWindow i = 0; i < LENGTH(mon->windows); ++i)
+            if(mon->windows[i] && i != mon->curwin) {
+                XUnmapWindow(dpy, mon->windows[i]);
+            }
     }
-
-    for(i = 0; i < LENGTH(windows); ++i)
-        if(windows[i] && i != curwin)
-            XUnmapWindow(dpy, windows[i]);
-}
-
-static void
-swap(HestWindow a, HestWindow b) {
-    Window temp;
-
-    temp = windows[a];
-    windows[a] = windows[b];
-    windows[b] = temp;
-
-    stack[top = 0] = curwin;
-    showhide();
 }
 
 static void
@@ -129,40 +139,34 @@ spawn(const char *argv[]) {
 }
 
 static void
-view(HestWindow window) {
-    stack[top = 0] = curwin = window;
+viewmon(unsigned char monitor) {
+    curmon = monitor;
     showhide();
 }
 
 static void
-configurenotify(XEvent *ev) {
-    XWindowAttributes wa;
-
-    ev = ev;
-
-    XGetWindowAttributes(dpy, root, &wa);
-
-    sw = wa.width;
-    sh = wa.height;
-
-    XMoveResizeWindow(dpy, windows[curwin], 0, 0, sw, sh);
+viewwin(HestWindow window) {
+    monitors[curmon].curwin = window;
+    showhide();
 }
 
 static void
 destroynotify(XEvent *ev) {
-    HestWindow i;
     XDestroyWindowEvent *dwe = &ev->xdestroywindow;
 
-    for(i = 0; i < LENGTH(windows); ++i)
-        if(windows[i] == dwe->window) {
-            memset(&windows[i], '\0', sizeof(Window));
+    for(unsigned char m = 0; m < LENGTH(monitors); ++m) {
+        HestMonitor *mon = &monitors[m];
 
-            if(i == curwin && top)
-                curwin = stack[--top];
+        for(HestWindow w = 0; w < LENGTH(monitors[curmon].windows); ++w) {
+            Window *win = &mon->windows[w];
 
-            showhide();
-            return;
+            if(*win == dwe->window) {
+                memset(win, '\0', sizeof(Window));
+                showhide();
+                return;
+            }
         }
+    }
 }
 
 static void
@@ -185,16 +189,23 @@ keypress(XEvent *ev) {
                 spawn(term_cmd);
             else
                 spawn(menu_cmd);
-        else
-            for(i = 0; i < LENGTH(keys); ++i)
-                if(keys[i] == keysym) {
-                    if(kev->state & ShiftMask)
-                        swap(i, curwin);
-                    else if(i != curwin)
-                        view(i);
+        else {
+            for(i = 0; i < LENGTH(window_keys); ++i)
+                if(window_keys[i] == keysym) {
+                    if(i != monitors[curmon].curwin)
+                        viewwin(i);
 
                     return;
                 }
+
+            for(i = 0; i < LENGTH(monitor_keys); ++i)
+                if(monitor_keys[i] == keysym) {
+                    if(i != curmon)
+                        viewmon(i);
+
+                    return;
+                }
+        }
     }
 }
 
@@ -214,22 +225,21 @@ static void
 maprequest(XEvent *ev) {
     static XWindowAttributes wa;
     XMapRequestEvent *mrev = &ev->xmaprequest;
-    HestWindow i;
+    HestMonitor *mon = &monitors[curmon];
 
     if(!XGetWindowAttributes(dpy, mrev->window, &wa))
         return;
 
-    for(i = 0; i < LENGTH(windows); ++i)
-        if(windows[i] == mrev->window) {
+    for(HestWindow w = 0; w < LENGTH(mon->windows); ++w)
+        if(mon->windows[w] == mrev->window) {
             showhide();
             return;
         }
 
-    if(windows[curwin])
-        for(curwin = 0; curwin < LENGTH(windows) && windows[curwin]; ++curwin);
+    if(mon->windows[mon->curwin])
+        for(mon->curwin = 0; mon->curwin < LENGTH(mon->windows) && mon->windows[mon->curwin]; ++mon->curwin);
 
-    stack[++top] = curwin;
-    windows[curwin] = mrev->window;
+    mon->windows[mon->curwin] = mrev->window;
     showhide();
 }
 
@@ -253,11 +263,20 @@ setup(void) {
         Mod4Mask | ShiftMask | ControlMask | Mod5Mask,
         Mod4Mask |             ControlMask | Mod5Mask,
     };
-    XWindowAttributes attributes;
 
     signal(SIGCHLD, SIG_IGN);
 
-    memset(&windows, 0, sizeof(windows));
+    memset(&monitors, 0, sizeof(monitors));
+
+    monitors[0].x = 0;
+    monitors[0].y = 0;
+    monitors[0].w = 1920;
+    monitors[0].h = 1080;
+
+    monitors[1].x = 1920;
+    monitors[1].y = 0;
+    monitors[1].w = 1280;
+    monitors[1].h = 1024;
 
     if(!(dpy = XOpenDisplay(NULL))) {
         fprintf(stderr, "Cannot open display\n");
@@ -268,16 +287,13 @@ setup(void) {
     root = RootWindow(dpy, screen);
 
     XSetErrorHandler(xerror);
-    XGetWindowAttributes(dpy, root, &attributes);
-    sw = attributes.width;
-    sh = attributes.height;
 
-    pager = XCreateSimpleWindow(dpy, root, 0, sh,
-                                sw, sh/2.5 + 32 + 1, 0,
+    HestMonitor *mon = &monitors[curmon];
+
+    pager = XCreateSimpleWindow(dpy, root, 0, mon->h,
+                                mon->w, mon->w/2.5 + 32 + 1, 0,
                                 WhitePixel(dpy, screen),
                                 BlackPixel(dpy, screen));
-
-    XMoveResizeWindow(dpy, pager, 0, sh - sh/2.5 - 32, sw, sh/2.5 + 32 + 1);
 
     gc = XCreateGC(dpy, pager, 0, NULL);
 
@@ -291,7 +307,7 @@ setup(void) {
 int
 main(void) {
     static void(*handler[LASTEvent])(XEvent *) = {
-        [ConfigureNotify] = configurenotify,
+        //[ConfigureNotify] = configurenotify,
         [DestroyNotify] = destroynotify,
         [KeyPress] = keypress,
         [KeyRelease] = keyrelease,
