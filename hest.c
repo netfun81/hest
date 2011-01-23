@@ -17,7 +17,7 @@ typedef struct {
     unsigned short y;
     unsigned short w;
     unsigned short h;
-    HestWindow curwin; // = 0
+    HestWindow curwin;
     Window windows[40];
 } HestMonitor;
 
@@ -101,7 +101,6 @@ drawpager(void) {
     XDrawString(dpy, pager, gc, 16, mon->h/2.5 + 16, buffer, strlen(buffer));
 }
 
-// Multimonitored!
 static void
 showhide(void) {
     for(unsigned char m = 0; m < LENGTH(monitors); ++m) {
@@ -237,7 +236,9 @@ maprequest(XEvent *ev) {
         }
 
     if(mon->windows[mon->curwin])
-        for(mon->curwin = 0; mon->curwin < LENGTH(mon->windows) && mon->windows[mon->curwin]; ++mon->curwin);
+        for(mon->curwin = 0;
+            mon->curwin < LENGTH(mon->windows) && mon->windows[mon->curwin];
+            ++mon->curwin);
 
     mon->windows[mon->curwin] = mrev->window;
     showhide();
@@ -289,7 +290,6 @@ setup(void) {
     XSetErrorHandler(xerror);
 
     HestMonitor *mon = &monitors[curmon];
-
     pager = XCreateSimpleWindow(dpy, root, 0, mon->h,
                                 mon->w, mon->w/2.5 + 32 + 1, 0,
                                 WhitePixel(dpy, screen),
@@ -297,17 +297,21 @@ setup(void) {
 
     gc = XCreateGC(dpy, pager, 0, NULL);
 
-    XSelectInput(dpy, root, KeyPressMask | SubstructureNotifyMask | SubstructureRedirectMask);
-    XGrabKey(dpy, XKeysymToKeycode(dpy, XK_Super_L), AnyModifier, root, False, GrabModeAsync, GrabModeAsync);
-    XGrabKey(dpy, XKeysymToKeycode(dpy, XK_Super_R), AnyModifier, root, False, GrabModeAsync, GrabModeAsync);
+    XSelectInput(dpy, root, KeyPressMask
+            | SubstructureNotifyMask
+            | SubstructureRedirectMask);
+    XGrabKey(dpy, XKeysymToKeycode(dpy, XK_Super_L), AnyModifier, root,
+            False, GrabModeAsync, GrabModeAsync);
+    XGrabKey(dpy, XKeysymToKeycode(dpy, XK_Super_R), AnyModifier, root,
+            False, GrabModeAsync, GrabModeAsync);
     for(i = 0; i < LENGTH(modifiers); ++i)
-        XGrabKey(dpy, AnyKey, modifiers[i], root, True, GrabModeAsync, GrabModeAsync);
+        XGrabKey(dpy, AnyKey, modifiers[i], root, True, GrabModeAsync,
+                GrabModeAsync);
 }
 
 int
 main(void) {
     static void(*handler[LASTEvent])(XEvent *) = {
-        //[ConfigureNotify] = configurenotify,
         [DestroyNotify] = destroynotify,
         [KeyPress] = keypress,
         [KeyRelease] = keyrelease,
