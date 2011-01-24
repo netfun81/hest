@@ -7,16 +7,17 @@
 
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
+#include <X11/extensions/Xinerama.h>
 
 #define LENGTH(array) (sizeof(array) / sizeof(array[0]))
 
 typedef unsigned char HestWindow;
 
 typedef struct {
-    unsigned short x;
-    unsigned short y;
-    unsigned short w;
-    unsigned short h;
+    short x;
+    short y;
+    short w;
+    short h;
     HestWindow curwin;
     Window windows[40];
 } HestMonitor;
@@ -252,6 +253,21 @@ xerror(Display *dpy, XErrorEvent *ee) {
 }
 
 static void
+xinerama_setup(void) {
+    int number;
+    XineramaScreenInfo *screens = XineramaQueryScreens(dpy, &number);
+
+    for(int s = 0; s < (int)LENGTH(monitors) && s < number; ++s) {
+        monitors[s].x = screens[s].x_org;
+        monitors[s].y = screens[s].y_org;
+        monitors[s].w = screens[s].width;
+        monitors[s].h = screens[s].height;
+    }
+
+    XFree(screens);
+}
+
+static void
 setup(void) {
     unsigned char i;
     static const KeySym modifiers[] = {
@@ -269,16 +285,6 @@ setup(void) {
 
     memset(&monitors, 0, sizeof(monitors));
 
-    monitors[0].x = 0;
-    monitors[0].y = 0;
-    monitors[0].w = 1920;
-    monitors[0].h = 1080;
-
-    monitors[1].x = 1920;
-    monitors[1].y = 0;
-    monitors[1].w = 1280;
-    monitors[1].h = 1024;
-
     if(!(dpy = XOpenDisplay(NULL))) {
         fprintf(stderr, "Cannot open display\n");
         exit(1);
@@ -289,6 +295,7 @@ setup(void) {
 
     XSetErrorHandler(xerror);
 
+    xinerama_setup();
     HestMonitor *mon = &monitors[curmon];
     pager = XCreateSimpleWindow(dpy, root, 0, mon->h,
                                 mon->w, mon->w/2.5 + 32 + 1, 0,
