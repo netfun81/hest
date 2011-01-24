@@ -19,23 +19,20 @@ typedef struct {
     short w;
     short h;
     HestWindow curwin;
-    Window windows[40];
+    Window windows[30];
 } HestMonitor;
 
 static Display *dpy;
 static GC gc;
 static unsigned char curmon = 0;
-static KeySym monitor_keys[12] = {
-    XK_F1, XK_F2,  XK_F3,  XK_F4,
-    XK_F5, XK_F6,  XK_F7,  XK_F8,
-    XK_F9, XK_F10, XK_F11, XK_F12
+static KeySym monitor_keys[10] = {
+    XK_1, XK_2, XK_3, XK_4, XK_5, XK_6, XK_7, XK_8,     XK_9,      XK_0
 };
 static HestMonitor monitors[12];
 static Window pager;
 static Window root;
 static short screen;
-static KeySym window_keys[40] = {
-    XK_1, XK_2, XK_3, XK_4, XK_5, XK_6, XK_7, XK_8,     XK_9,      XK_0,
+static KeySym window_keys[30] = {
     XK_q, XK_w, XK_e, XK_r, XK_t, XK_y, XK_u, XK_i,     XK_o,      XK_p,
     XK_a, XK_s, XK_d, XK_f, XK_g, XK_h, XK_j, XK_k,     XK_l,      XK_semicolon,
     XK_z, XK_x, XK_c, XK_v, XK_b, XK_n, XK_m, XK_comma, XK_period, XK_slash
@@ -59,15 +56,15 @@ drawpager(void) {
     struct tm *tmp;
     HestMonitor *mon = &monitors[curmon];
 
-    XMoveResizeWindow(dpy, pager, mon->x, mon->h - mon->h/2.5 - 32, mon->w,
-            mon->h / 2.5 + 32 + 1);
+    XMoveResizeWindow(dpy, pager, mon->x, mon->y + mon->h - mon->h/3.5 - 32,
+            mon->w, mon->h / 3.5 + 32 + 1);
 
     w = (mon->w / 10 - 12);
     h = (mon->h / 10 - 12);
 
     XSetForeground(dpy, gc, XBlackPixel(dpy, screen));
-    XFillRectangle(dpy, pager, gc, 0, 0, mon->w / 2.5,
-            mon->h / 2.5 + 32 + 1);
+    XFillRectangle(dpy, pager, gc, 0, 0, mon->w / 3.5,
+            mon->h / 3.5 + 32 + 1);
 
     for(i = 0; i < LENGTH(mon->windows); ++i) {
         x = (i % 10 + 1) * 10 + i % 10 * w;
@@ -99,7 +96,7 @@ drawpager(void) {
     t = time(NULL);
     tmp = localtime(&t);
     strftime(buffer, LENGTH(buffer), "%Y-%m-%d %H:%M:%S", tmp);
-    XDrawString(dpy, pager, gc, 16, mon->h/2.5 + 16, buffer, strlen(buffer));
+    XDrawString(dpy, pager, gc, 16, mon->h/3.5 + 16, buffer, strlen(buffer));
 }
 
 static void
@@ -298,7 +295,7 @@ setup(void) {
     xinerama_setup();
     HestMonitor *mon = &monitors[curmon];
     pager = XCreateSimpleWindow(dpy, root, 0, mon->h,
-                                mon->w, mon->w/2.5 + 32 + 1, 0,
+                                mon->w, mon->w/3.5 + 32 + 1, 0,
                                 WhitePixel(dpy, screen),
                                 BlackPixel(dpy, screen));
 
