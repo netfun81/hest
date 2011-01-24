@@ -108,17 +108,19 @@ showhide(void) {
             XMapRaised(dpy, mon->windows[mon->curwin]);
             XMoveResizeWindow(dpy, mon->windows[mon->curwin],
                     mon->x, mon->y, mon->w, mon->h);
-            if(m == curmon)
-                XSetInputFocus(dpy, mon->windows[mon->curwin],
-                        RevertToPointerRoot, CurrentTime);
-        } else if(m == curmon) {
-            XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
         }
 
-        for(HestWindow i = 0; i < LENGTH(mon->windows); ++i)
-            if(mon->windows[i] && i != mon->curwin) {
-                XUnmapWindow(dpy, mon->windows[i]);
-            }
+        if(m == curmon) {
+            if(mon->windows[mon->curwin])
+                XSetInputFocus(dpy, mon->windows[mon->curwin],
+                        RevertToPointerRoot, CurrentTime);
+            else
+                XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
+        }
+
+        for(HestWindow w = 0; w < LENGTH(mon->windows); ++w)
+            if(mon->windows[w] && w != mon->curwin)
+                XUnmapWindow(dpy, mon->windows[w]);
     }
 }
 
@@ -144,6 +146,29 @@ viewmon(unsigned char monitor) {
 static void
 viewwin(HestWindow window) {
     monitors[curmon].curwin = window;
+    showhide();
+}
+
+static void
+swapmon(unsigned char a, unsigned char b) {
+    HestMonitor *ma = &monitors[a];
+    HestMonitor *mb = &monitors[b];
+
+    Window tmp = ma->windows[ma->curwin];
+    ma->windows[ma->curwin] = mb->windows[mb->curwin];
+    mb->windows[mb->curwin] = tmp;
+
+    showhide();
+}
+
+static void
+swapwin(HestWindow a, HestWindow b) {
+    HestMonitor *mon = &monitors[curmon];
+
+    Window tmp = mon->windows[a];
+    mon->windows[a] = mon->windows[b];
+    mon->windows[b] = tmp;
+
     showhide();
 }
 
@@ -189,15 +214,19 @@ keypress(XEvent *ev) {
         else {
             for(i = 0; i < LENGTH(window_keys); ++i)
                 if(window_keys[i] == keysym) {
-                    if(i != monitors[curmon].curwin)
+                    if(kev->state & ShiftMask)
+                        swapwin(monitors[curmon].curwin, i);
+                    else if(i != monitors[curmon].curwin)
                         viewwin(i);
 
                     return;
                 }
 
             for(i = 0; i < LENGTH(monitor_keys); ++i)
-                if(monitor_keys[i] == keysym) {
-                    if(i != curmon)
+                if(monitor_keys[i] == keysym && monitors[i].w) {
+                    if(kev->state & ShiftMask)
+                        swapmon(curmon, i);
+                    else if(i != curmon)
                         viewmon(i);
 
                     return;
