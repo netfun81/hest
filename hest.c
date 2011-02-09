@@ -20,6 +20,8 @@ typedef struct {
     short h;
     HestWindow curwin;
     Window windows[30];
+    HestWindow stack[30];
+    HestWindow top;
 } HestMonitor;
 
 static Display *dpy;
@@ -145,7 +147,10 @@ viewmon(unsigned char monitor) {
 
 static void
 viewwin(HestWindow window) {
-    monitors[curmon].curwin = window;
+    HestMonitor *mon = &monitors[curmon];
+
+    mon->stack[mon->top = 0] = mon->curwin = window;
+
     showhide();
 }
 
@@ -169,6 +174,8 @@ swapwin(HestWindow a, HestWindow b) {
     mon->windows[a] = mon->windows[b];
     mon->windows[b] = tmp;
 
+    mon->stack[mon->top = 0] = mon->curwin;
+
     showhide();
 }
 
@@ -183,6 +190,9 @@ destroynotify(XEvent *ev) {
             Window *win = &mon->windows[w];
 
             if(*win == dwe->window) {
+                if(w == mon->curwin && mon->top)
+                    mon->curwin = mon->stack[--mon->top];
+
                 memset(win, '\0', sizeof(Window));
                 showhide();
                 return;
@@ -267,6 +277,7 @@ maprequest(XEvent *ev) {
             mon->curwin < LENGTH(mon->windows) && mon->windows[mon->curwin];
             ++mon->curwin);
 
+    mon->stack[++mon->top] = mon->curwin;
     mon->windows[mon->curwin] = mrev->window;
     showhide();
 }
