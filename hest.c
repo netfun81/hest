@@ -332,6 +332,11 @@ setup(void) {
 
     XSetErrorHandler(xerror);
 
+    XWindowAttributes wa;
+    XGetWindowAttributes(dpy, root, &wa);
+    monitors[0].w = wa.width;
+    monitors[0].h = wa.height;
+
     xinerama_setup();
     HestMonitor *mon = &monitors[curmon];
     pager = XCreateSimpleWindow(dpy, root, 0, mon->h,
