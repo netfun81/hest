@@ -320,8 +320,6 @@ setup(void) {
 
     signal(SIGCHLD, SIG_IGN);
 
-    memset(&monitors, 0, sizeof(monitors));
-
     if(!(dpy = XOpenDisplay(NULL))) {
         fprintf(stderr, "Cannot open display\n");
         exit(1);
@@ -331,6 +329,8 @@ setup(void) {
     root = RootWindow(dpy, screen);
 
     XSetErrorHandler(xerror);
+
+    memset(&monitors, 0, sizeof(monitors));
 
     XWindowAttributes wa;
     XGetWindowAttributes(dpy, root, &wa);
