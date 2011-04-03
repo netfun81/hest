@@ -10,30 +10,48 @@ screen. Thus, only one window may be used at a time. This makes it easy to
 focus on one task at a time, and minimizes distractions.
 .P
 .B hest
-manages up to 40 windows. Each window gets assigned a key for quick access. The
-keys are optimised for a US QWERTY keyboard layout, and are
-.BR [1234567890qwertyuiopasdfghjkl;zxcvbnm,./].
+manages up to 30 windows on each of up to 10 monitors. Each window  and monitor
+gets assigned a key for quick access. The keys are optimised for a US QWERTY
+keyboard layout.
 .SH OPTIONS
 .B hest
 has no options.
 .SH USAGE
-.SS Window management
+.SS Key bindings
 .TP
-.B Mod4-shortcut
-View the window corresponding to the shortcut.
+.B Mod4-Control
+Show an overview of the focused monitor's windows while held.
 .TP
-.B Mod4-Shift-shortcut
-Swap the current window and the one corresponding to the shortcut.
+.B Mod4-[0-9]
+Focus the monitor corresponding to the key pressed.
+.TP
+.B Mod4-[a-z;,./]
+View the window corresponding to the key pressed.
+.TP
+.B Mod4-Shift-[0-9]
+Swap the window in the currently focused monitor and the one corresponding to
+the key pressed.
+.TP
+.B Mod4-Shift-[a-z;,./]
+Swap the current window and the one corresponding to the key pressed.
 .TP
 .B Mod4-Return
-Start
+Execute
 .BR dmenu_run (1).
 .TP
 .B Mod4-Shift-Return
-Start
+Execute
 .BR urxvt (1).
 .SH BUGS
-Probably lots.
+The
+.B xkill
+program does not work with
+.BR hest .
+.TP
+.B hest
+does not handle changing the resolution of the display.
+.TP
+If you find more bugs, please send them to <mastensg@ping.uio.no>.
 .SH AUTHOR
 Martin Stensgård <mastensg@ping.uio.no>
 .SH SEE ALSO
