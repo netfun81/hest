@@ -180,6 +180,21 @@ swapwin(HestWindow a, HestWindow b) {
 }
 
 static void
+xinerama_setup(void) {
+    int number;
+    XineramaScreenInfo *screens = XineramaQueryScreens(dpy, &number);
+
+    for(int s = 0; s < (int)LENGTH(monitors) && s < number; ++s) {
+        monitors[s].x = screens[s].x_org;
+        monitors[s].y = screens[s].y_org;
+        monitors[s].w = screens[s].width;
+        monitors[s].h = screens[s].height;
+    }
+
+    XFree(screens);
+}
+
+static void
 destroynotify(XEvent *ev) {
     XDestroyWindowEvent *dwe = &ev->xdestroywindow;
 
@@ -215,32 +230,42 @@ keypress(XEvent *ev) {
         drawpager();
     }
 
-    if(kev->state & Mod4Mask) {
-        if(keysym == XK_Return)
-            if(kev->state & ShiftMask)
-                spawn(term_cmd);
-            else
-                spawn(menu_cmd);
-        else {
-            for(i = 0; i < LENGTH(window_keys); ++i)
-                if(window_keys[i] == keysym) {
-                    if(kev->state & ShiftMask)
-                        swapwin(monitors[curmon].curwin, i);
-                    else if(i != monitors[curmon].curwin)
-                        viewwin(i);
+    if(!(kev->state & Mod4Mask))
+        return;
 
-                    return;
-                }
+    switch(keysym) {
+    case XK_Return:
+        if(kev->state & ShiftMask)
+            spawn(term_cmd);
+        else
+            spawn(menu_cmd);
+        break;
 
-            for(i = 0; i < LENGTH(monitor_keys); ++i)
-                if(monitor_keys[i] == keysym && monitors[i].w) {
-                    if(kev->state & ShiftMask)
-                        swapmon(curmon, i);
-                    else if(i != curmon)
-                        viewmon(i);
+    case XK_grave:
+        xinerama_setup();
+        break;
 
-                    return;
-                }
+    default:
+        for(i = 0; i < LENGTH(window_keys); ++i) {
+            if(window_keys[i] == keysym) {
+                if(kev->state & ShiftMask)
+                    swapwin(monitors[curmon].curwin, i);
+                else if(i != monitors[curmon].curwin)
+                    viewwin(i);
+
+                break;
+            }
+        }
+
+        for(i = 0; i < LENGTH(monitor_keys); ++i) {
+            if(monitor_keys[i] == keysym && monitors[i].w) {
+                if(kev->state & ShiftMask)
+                    swapmon(curmon, i);
+                else if(i != curmon)
+                    viewmon(i);
+
+                break;
+            }
         }
     }
 }
@@ -287,21 +312,6 @@ xerror(Display *dpy, XErrorEvent *ee) {
     fprintf(stderr, "Got an XErrorEvent: %p, %p\n", (void *)dpy, (void *)ee);
 
     return 0;
-}
-
-static void
-xinerama_setup(void) {
-    int number;
-    XineramaScreenInfo *screens = XineramaQueryScreens(dpy, &number);
-
-    for(int s = 0; s < (int)LENGTH(monitors) && s < number; ++s) {
-        monitors[s].x = screens[s].x_org;
-        monitors[s].y = screens[s].y_org;
-        monitors[s].w = screens[s].width;
-        monitors[s].h = screens[s].height;
-    }
-
-    XFree(screens);
 }
 
 static void
