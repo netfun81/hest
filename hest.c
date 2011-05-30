@@ -1,4 +1,3 @@
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -305,8 +304,6 @@ setup(void) {
         Mod4Mask | ShiftMask | ControlMask | Mod5Mask,
         Mod4Mask |             ControlMask | Mod5Mask,
     };
-
-    signal(SIGCHLD, SIG_IGN);
 
     if(!(dpy = XOpenDisplay(NULL))) {
         fprintf(stderr, "Cannot open display\n");
