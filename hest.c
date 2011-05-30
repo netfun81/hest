@@ -39,8 +39,6 @@ static KeySym window_keys[30] = {
     XK_a, XK_s, XK_d, XK_f, XK_g, XK_h, XK_j, XK_k,     XK_l,      XK_semicolon,
     XK_z, XK_x, XK_c, XK_v, XK_b, XK_n, XK_m, XK_comma, XK_period, XK_slash
 };
-static const char *menu_cmd[]            = {"dmenu_run", NULL};
-static const char *term_cmd[]            = {"urxvt", NULL};
 static const char *current_border_color  = "#bbccff";
 static const char *fg_color              = "#ffeedd";
 static const char *normal_border_color   = "#445566";
@@ -123,19 +121,6 @@ showhide(void) {
         for(HestWindow w = 0; w < LENGTH(mon->windows); ++w)
             if(mon->windows[w] && w != mon->curwin)
                 XUnmapWindow(dpy, mon->windows[w]);
-    }
-}
-
-static void
-spawn(const char *argv[]) {
-    pid_t pid;
-
-    if(!(pid = fork())) {
-        close(ConnectionNumber(dpy));
-        setsid();
-        execvp(argv[0], (char**)argv);
-        fprintf(stderr, "Couldn't execvp.\n");
-        exit(EXIT_FAILURE);
     }
 }
 
@@ -234,13 +219,6 @@ keypress(XEvent *ev) {
         return;
 
     switch(keysym) {
-    case XK_Return:
-        if(kev->state & ShiftMask)
-            spawn(term_cmd);
-        else
-            spawn(menu_cmd);
-        break;
-
     case XK_grave:
         xinerama_setup();
         break;
