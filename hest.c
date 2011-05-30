@@ -61,6 +61,8 @@ drawpager(void) {
     XMoveResizeWindow(dpy, pager, mon->x, mon->y + mon->h - mon->h/3.5 - 32,
             mon->w, mon->h / 3.5 + 32 + 1);
 
+    XMapRaised(dpy, pager);
+
     w = (mon->w / 10 - 12);
     h = (mon->h / 10 - 12);
 
@@ -226,7 +228,6 @@ keypress(XEvent *ev) {
 
     if((kev->state & ControlMask || keysym == XK_Control_L || keysym == XK_Control_R) &&
        (kev->state & Mod4Mask || keysym == XK_Super_L || keysym == XK_Super_R)) {
-        XMapRaised(dpy, pager);
         drawpager();
     }
 
