@@ -1,7 +1,7 @@
 VERSION = 0.2
 
 CFLAGS  = -Wall -Wextra -pedantic -std=c99 -O3
-LDFLAGS = -lX11 -lxinerama
+LDFLAGS = -lX11 -lXinerama
 
 PREFIX  = /usr/local
 BINARY  = hest
