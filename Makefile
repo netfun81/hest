@@ -17,15 +17,15 @@ $(BINARY): $(BINARY).o
 all: $(BINARY)
 
 clean:
-        rm -f $(BINARY) *.o
+	rm -f $(BINARY) *.o
 
 install: all
-        install -Ds $(BINARY) $(BINPATH)
-        install -D -m 644 $(MANPAGE) $(MANPATH)
-        sed -i "s/VERSION/$(VERSION)/g" $(MANPATH)
+	install -Ds $(BINARY) $(BINPATH)
+	install -D -m 644 $(MANPAGE) $(MANPATH)
+	sed -i "s/VERSION/$(VERSION)/g" $(MANPATH)
 
 uninstall:
-        rm -f $(BINPATH)
-        rm -f $(MANPATH)
+	rm -f $(BINPATH)
+	rm -f $(MANPATH)
 
 .PHONY: all clean install uninstall
