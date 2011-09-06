@@ -1,22 +1,31 @@
-CFLAGS  = -std=c99 -Wall -Wextra -pedantic -O3
-LDFLAGS = -lX11 -lXinerama
-BINARY  = hest
 VERSION = 0.2
+
+CFLAGS  = -Wall -Wextra -pedantic -std=c99 -O3
+LDFLAGS = -lX11 -lxinerama
+
 PREFIX  = /usr/local
-OBJECTS = $(BINARY).o
+BINARY  = hest
+BINPATH = $(PREFIX)/bin/
+
+MANSECT = 1
+MANPAGE = $(BINARY).$(MANSECT)
+MANBASE = $(PREFIX)/share/man/man$(MANSECT)
+MANPATH = $(MANBASE)/$(MANPAGE)
+
+$(BINARY): $(BINARY).o
 
 all: $(BINARY)
 
 clean:
-	@rm -f $(BINARY).o $(BINARY)
+        rm -f $(BINARY) *.o
 
 install: all
-	@mkdir -p $(PREFIX)/bin
-	@cp -f $(BINARY) $(PREFIX)/bin/$(BINARY)
-	@chmod 755 $(PREFIX)/bin/$(BINARY)
-	@mkdir -p $(PREFIX)/man/man1
-	@sed "s/VERSION/$(VERSION)/g" < $(BINARY).1 > $(PREFIX)/man/man1/$(BINARY).1
-	@chmod 644 $(PREFIX)/man/man1/$(BINARY).1
+        install -Ds $(BINARY) $(BINPATH)
+        install -D -m 644 $(MANPAGE) $(MANPATH)
+        sed -i "s/VERSION/$(VERSION)/g" $(MANPATH)
 
 uninstall:
-	@rm -f $(BINARY) $(PREFIX)/bin/$(BINARY)
+        rm -f $(BINPATH)
+        rm -f $(MANPATH)
+
+.PHONY: all clean install uninstall
