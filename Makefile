@@ -1,7 +1,7 @@
 CFLAGS  = -std=c99 -Wall -Wextra -pedantic -O3
 LDFLAGS = -lX11 -lXinerama
 BINARY  = hest
-VERSION = 0.1
+VERSION = 0.2
 PREFIX  = /usr/local
 OBJECTS = $(BINARY).o
 
