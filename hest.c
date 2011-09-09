@@ -21,6 +21,8 @@ typedef struct {
     Window windows[30];
     HestWindow stack[30];
     HestWindow top;
+    int cx;
+    int cy;
 } HestMonitor;
 
 static Display *dpy;
@@ -127,7 +129,14 @@ showhide(void) {
 
 static void
 viewmon(unsigned char monitor) {
+    int _;
+    XQueryPointer(dpy, root, (Window *)&_, (Window *)&_, &monitors[curmon].cx, &monitors[curmon].cy, &_, &_, (unsigned int *)&_);
+
     curmon = monitor;
+
+    if(monitors[curmon].cx != -1)
+        XWarpPointer(dpy, None, root, 0, 0, 0, 0, monitors[curmon].cx, monitors[curmon].cy);
+
     showhide();
 }
 
@@ -317,6 +326,8 @@ setup(void) {
     XSetErrorHandler(xerror);
 
     memset(&monitors, 0, sizeof(monitors));
+    for(i = 0; i < LENGTH(monitors); ++i)
+        monitors[i].cx = monitors[i].cy = -1;
 
     XWindowAttributes wa;
     XGetWindowAttributes(dpy, root, &wa);
