@@ -1,4 +1,4 @@
-.TH HEST 1 hest\-VERSION
+.TH HEST 1 hest\-@VERSION@
 .SH NAME
 hest \- fullscreen window manager
 .SH SYNOPSIS

@@ -1,1 +1,15 @@
-hest
+*.cache
+*.log
+*.o
+*.status
+*tar.gz
+/.deps
+/Makefile
+/Makefile.in
+/aclocal.m4
+/configure
+/depcomp
+/hest
+/hest.1
+/install-sh
+/missing
