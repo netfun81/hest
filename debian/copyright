@@ -1,0 +1,24 @@
+This package was debianized by Martin Stensgård <mastensg@ping.uio.no> on
+Tue, 20 Sep 2011 02:18:55 +0200.
+
+It was downloaded from <url://example.com>
+
+Upstream Author(s): 
+
+    <put author's name and email here>
+    <likewise for another author>
+
+Copyright: 
+
+    <Copyright (C) YYYY Name OfAuthor>
+    <likewise for another author>
+
+License:
+
+    <Put the license of the package here indented by 4 spaces>
+
+The Debian packaging is (C) 2011, Martin Stensgård <mastensg@ping.uio.no> and
+is licensed under the BSD licence, see `/usr/share/common-licenses/BSD'.
+
+# Please also look if there are files or directories which have a
+# different copyright/license attached and list them here.

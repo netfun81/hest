@@ -1,0 +1,12 @@
+Source: hest
+Section: x11
+Priority: extra
+Maintainer: Martin Stensgård <mastensg@ping.uio.no>
+Build-Depends: debhelper (>= 5), autotools-dev, libx11-dev, libxinerama-dev
+Standards-Version: 3.7.2
+
+Package: hest
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Fullscreen window manager for X.
+ Yes.
