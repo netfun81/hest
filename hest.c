@@ -129,14 +129,7 @@ showhide(void) {
 
 static void
 viewmon(unsigned char monitor) {
-    int _;
-    XQueryPointer(dpy, root, (Window *)&_, (Window *)&_, &monitors[curmon].cx, &monitors[curmon].cy, &_, &_, (unsigned int *)&_);
-
     curmon = monitor;
-
-    if(monitors[curmon].cx != -1)
-        XWarpPointer(dpy, None, root, 0, 0, 0, 0, monitors[curmon].cx, monitors[curmon].cy);
-
     showhide();
 }
 
