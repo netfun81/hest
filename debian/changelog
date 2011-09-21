@@ -1,3 +1,9 @@
+hest (0.2.1-1) unstable; urgency=low
+
+  * Bug fix release.
+
+ -- Martin Stensgård <mastensg@ping.uio.no>  Wed, 21 Sep 2011 18:53:50 +0200
+
 hest (0.2.0-1) unstable; urgency=low
 
   * Initial release.
