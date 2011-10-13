@@ -1,4 +1,4 @@
-AC_INIT(hest, 0.2.1)
+AC_INIT(hest, 0.2.2)
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CHECK_HEADERS([stdlib.h string.h unistd.h])
