@@ -37,6 +37,9 @@ Swap the current window and the one corresponding to the key pressed.
 .TP
 .B Mod4-`
 Update the monitor layout.
+.TP
+.B Mod4-Delete
+Delete the current window.
 .SH BUGS
 The
 .B xkill

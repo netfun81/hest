@@ -221,6 +221,10 @@ keypress(XEvent *ev) {
         return;
 
     switch(keysym) {
+    case XK_Delete:
+        XDestroyWindow(dpy, monitors[curmon].windows[monitors[curmon].curwin]);
+        break;
+
     case XK_grave:
         xinerama_setup();
         break;
