@@ -1,5 +1,10 @@
 Wed, 21 Sep 2011 18:53:50 +0200
 
+  * Release of version 0.2.2.
+  * Add window closing command.
+
+Thu, 13 Oct 2011 02:20:25 +0200
+
   * Release of version 0.2.1.
   * Fix a warp-related crash bug.
 
