@@ -7,7 +7,13 @@
 /Makefile
 /Makefile.in
 /aclocal.m4
+/build-stamp
+/config.guess
+/config.sub
 /configure
+/debian/files
+/debian/hest
+/debian/hest.substvars
 /depcomp
 /hest
 /hest.1
