@@ -52,7 +52,7 @@ drawpager(void) {
     Colormap cmap = DefaultColormap(dpy, screen);
     XColor color;
     HestWindow i;
-    unsigned short x, y, h, w;
+    unsigned short x, y, h, w, tw;
     time_t t;
     struct tm *tmp;
     HestMonitor *mon = &monitors[curmon];
@@ -98,8 +98,17 @@ drawpager(void) {
 
     t = time(NULL);
     tmp = localtime(&t);
+
+    XAllocNamedColor(dpy, cmap, occupied_bg_color, &color, &color);
+    XSetForeground(dpy, gc, color.pixel);
+    tw = 10 * w + 91;
+    XFillRectangle(dpy, pager, gc, 10, mon->h / 3.5 + 16, tw * (t % 3600) / 3600, 10);
+
     strftime(buffer, LENGTH(buffer), "%Y-%m-%d %H:%M:%S | %G-%V-%u", tmp);
-    XDrawString(dpy, pager, gc, 16, mon->h/3.5 + 26, buffer, strlen(buffer));
+
+    XAllocNamedColor(dpy, cmap, fg_color, &color, &color);
+    XSetForeground(dpy, gc, color.pixel);
+    XDrawString(dpy, pager, gc, 16, mon->h / 3.5 + 26, buffer, strlen(buffer));
 }
 
 static void
